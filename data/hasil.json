@@ -1,6 +1,6 @@
 {
- "catatan": "Cuplikan statis hasil voting. Placeholder sampai ada backend yang hidup. Bentuknya identik dengan respons GET /api/hasil supaya halaman memakai satu renderer untuk keduanya; bedanya hanya field `sumber`.",
- "dibuat": null,
+ "catatan": "Cuplikan statis hasil voting, dihasilkan alat/cuplikan.py. Bentuknya identik dengan respons GET /api/hasil supaya halaman memakai satu renderer untuk keduanya; bedanya hanya field `sumber`.",
+ "dibuat": "2026-10-29T08:00:37.552Z",
  "hitung": {
   "A": 0,
   "B": 0
