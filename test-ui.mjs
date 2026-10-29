@@ -100,6 +100,28 @@ function cekBenar(nama, kondisi, info = '') {
   else gagal++;
 }
 
+/**
+ * Menunggu KONDISI, bukan menunggu sekian milidetik.
+ *
+ * Tidur dengan angka tetap adalah sumber flaky yang paling licik di berkas
+ * ini: angka yang cukup untuk server lokal terlalu pendek untuk jaringan
+ * sungguhan, dan gejalanya bukan "timeout" melainkan assertion yang gagal
+ * dengan nilai keadaan AWAL -- seolah fiturnya rusak, padahal halamannya cuma
+ * belum selesai.
+ *
+ * Mengembalikan true/false alih-alih melempar, supaya kegagalannya dilaporkan
+ * sebagai baris GAGAL yang bisa dibaca, bukan jejak tumpukan yang menghentikan
+ * seluruh berkas.
+ */
+async function tunggu(halaman, fn, { batas = SITUS_LUAR ? 30000 : 10000 } = {}) {
+  try {
+    await halaman.waitForFunction(fn, null, { timeout: batas });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 /* --------------------------------------------------------- server statis --- */
 
 const TIPE = {
@@ -149,10 +171,19 @@ function layaniStatis(port) {
       return;
     }
 
-    /* Mode --relatif: api.json ditimpa supaya menunjuk alamat relatif. */
-    if (RELATIF && jalur === '/data/api.json') {
+    /* data/api.json ditimpa supaya setiap mode benar-benar berarti apa yang
+       namanya janjikan.
+
+       Ini bukan kenyamanan: berkas yang ter-commit menunjuk backend PRODUKSI,
+       karena memang itu yang dibutuhkan GitHub Pages. Tanpa penimpaan di
+       sini, mode --tanpa-api tetap memanggil produksi, ditolak CORS karena
+       origin server uji tidak ada di allowlist produksi, lalu melaporkan
+       "tidak bisa dihubungi" -- padahal yang sedang diuji adalah keadaan
+       "belum ada alamat sama sekali". Dan menambahkan port server uji ke
+       allowlist PRODUKSI demi menyenangkan tes jelas bukan jawabannya. */
+    if (jalur === '/data/api.json' && (RELATIF || TANPA_API)) {
       res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' });
-      res.end(JSON.stringify({ dasar: 'lokal/api.php' }));
+      res.end(JSON.stringify({ dasar: RELATIF ? 'lokal/api.php' : null }));
       return;
     }
 
@@ -296,10 +327,20 @@ if (SITUS_LUAR) {
   }
 }
 
-/* Apakah HALAMAN yang diuji akan punya alamat API, dari sumber mana pun.
-   Dipakai untuk memilih kalimat mana yang diharapkan, bukan untuk memutuskan
-   assertion mana yang dilewati. */
-const halamanPunyaApi = Boolean(dasarApi || dasarSitus);
+/**
+ * Apakah HALAMAN yang diuji akan punya alamat API, dari sumber mana pun.
+ *
+ * Dipakai untuk memilih kalimat mana yang diharapkan, bukan untuk memutuskan
+ * assertion mana yang dilewati -- keduanya tetap dijalankan, yang berbeda
+ * hanya yang dianggap benar.
+ *
+ * Urutannya mengikuti urutan di halaman: ?api= menang atas data/api.json.
+ */
+const halamanPunyaApi = RELATIF
+  ? true
+  : TANPA_API
+    ? false
+    : Boolean(dasarApi || dasarSitus);
 
 /* ?api= dipakai untuk mengarahkan halaman ke backend uji, dan sekaligus
    menguji jalur override itu sendiri. 127.0.0.1 ada di allowlist halaman. */
@@ -361,6 +402,15 @@ if (RELATIF) {
 }
 
 if (SITUS_LUAR) {
+  /* Tunggu sampai ringkasan benar-benar terisi. Di jaringan sungguhan,
+     memeriksa terlalu cepat berarti membaca keadaan kosong dan menyalahkan
+     halaman atas keterlambatan jaringan. */
+  const terisi = await tunggu(page, () => {
+    const r = document.getElementById('ringkas');
+    return r && r.textContent.trim().length > 0;
+  });
+  cekBenar('situs live: ringkasan terisi dalam batas waktu', terisi);
+
   const ringkasAwal = await page.locator('#ringkas').innerText();
   const notaTampak = (await n('#alasan-mati.show')) === 1;
   const notaTeks = await page.locator('#alasan-mati').innerText();
@@ -797,7 +847,17 @@ if (dasarApi) {
 
   await page.goto(URL_UJI, { waitUntil: 'load' });
   await page.waitForSelector('article.card');
-  await page.waitForTimeout(1500);
+
+  /* Tunggu halaman benar-benar JATUH ke jalur cuplikan, jangan tidur sekian
+     milidetik lalu berharap. Tombol kirim awalnya memang belum disabled --
+     ia baru dinonaktifkan setelah fallback ke data/hasil.json selesai, dan
+     lewat internet itu bisa lebih lama dari tidur tetap mana pun. */
+  const jatuh = await tunggu(page, () => {
+    const b = document.getElementById('btn-kirim');
+    const n = document.getElementById('alasan-mati');
+    return b && b.disabled && n && n.classList.contains('show');
+  });
+  cekBenar('backend mati: halaman jatuh ke jalur cuplikan', jatuh);
 
   cekBenar('backend mati: banner muncul', (await n('#banner.show')) === 1);
   cek('backend mati: tombol kirim disabled', await page.locator('#btn-kirim').isDisabled(), true);

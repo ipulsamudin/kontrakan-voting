@@ -118,46 +118,87 @@ voting hanya hidup selama laptop Anda menyala.
 > diuji, bukan dugaan. Halaman dan backend harus satu origin, atau backend
 > harus punya alamat publik sendiri (lihat bagian berikutnya).
 
-### Permanen, 24 jam
+### Permanen, 24 jam -- SUDAH AKTIF
 
-Butuh akun Cloudflare gratis, tanpa kartu kredit. Daftar di
-<https://dash.cloudflare.com/sign-up>, lalu:
+Backend hidup di <https://kontrakan-voting.pages.dev> dan `data/api.json`
+sudah menunjuk ke sana. Halaman publiknya tetap
+<https://ipulsamudin.github.io/kontrakan-voting/>.
 
-```bash
-npx wrangler login     # OAuth lewat browser, sekali saja
-npm run deploy:cf      # sisanya satu perintah
-```
-
-`npm run deploy:cf` mengerjakan sembilan langkah yang sebelumnya manual:
-membuat basis data D1 kalau belum ada, menulis `database_id` ke
-`worker/wrangler.toml`, menerapkan migrasi ke D1 remote, memasang rahasia
-`IP_SALT`, men-deploy Worker, **memverifikasi alamatnya sungguhan** dengan
-memanggil `/api/hasil`, lalu menulis alamat itu ke `data/api.json`.
-
-Idempoten dan aman dijalankan ulang. Dua hal yang sengaja tidak diulang:
-basis data yang sudah ada dipakai lagi, dan `IP_SALT` yang sudah terpasang
-**tidak** diputar ulang -- mengganti salt membuat setiap `sidik` yang sudah
-diterbitkan tidak lagi cocok dengan yang baru, sehingga riwayat jadi tidak
-bisa dibandingkan antar-periode.
-
-Terakhir:
+Untuk men-deploy ulang setelah mengubah `worker/src/index.js`:
 
 ```bash
-git add data/api.json worker/wrangler.toml
-git commit -m "feat: hidupkan voting lewat Worker + D1"
-git push
+npm run deploy:cf
 ```
 
-Workflow `Terbitkan` men-deploy ulang Pages, dan voting hidup tanpa laptop
-Anda menyala.
+Satu perintah, idempoten, sembilan langkah: pastikan basis data D1 ada, tulis
+`database_id`, terapkan migrasi remote, pasang `IP_SALT`, deploy,
+**verifikasi alamatnya sungguhan** dengan memanggil `/api/hasil`, lalu tulis
+alamat itu ke `data/api.json`. Lalu commit dan push supaya GitHub Pages ikut
+terbarui.
 
-Kuotanya: 5 juta baris dibaca per hari, 100.000 baris ditulis per hari,
-500 MB per basis data. Satu suara memakai sekitar lima baris tulis, jadi
-plafonnya sekitar 20.000 suara per hari.
+#### Kenapa Pages, bukan Workers
 
-> Akun Cloudflare yang betul-betul baru kadang belum punya subdomain
-> `workers.dev`, dan itu diklaim sekali lewat dashboard. Kalau itu terjadi,
-> `npm run deploy:cf` mencetak instruksinya, bukan jejak tumpukan.
+Akun Cloudflare ini belum punya subdomain `workers.dev`. Tanpa itu Worker-nya
+terunggah tapi tidak punya alamat publik -- hidup tanpa pintu. Mengklaim
+subdomain adalah pilihan sekali seumur akun yang namanya jadi bagian dari URL
+**setiap** Worker di akun itu, jadi tidak pantas diotomatiskan.
+
+Cloudflare Pages memberi setiap proyek subdomain `pages.dev` sendiri tanpa
+klaim tingkat akun, dan Pages Functions "advanced mode" menerima persis bentuk
+modul yang sudah kita punya. Karena itu **`worker/src/index.js` tidak diubah
+sama sekali**: berkas yang sama disalin apa adanya jadi `_worker.js`. Tidak ada
+backend kedua yang harus dirawat, dan `test-api.mjs` tetap satu-satunya
+penentu kontraknya.
+
+`npm run deploy:cf` mencoba jalur Workers lebih dulu dan pindah sendiri ke
+Pages kalau subdomainnya belum ada. Kalau suatu saat Anda mengklaim subdomain
+itu, jalankan ulang perintah yang sama dan jalur Workers akan dipakai lagi;
+proyek Pages boleh dihapus lewat dashboard.
+
+Tiga hal yang ditemukan saat mengerjakannya, semuanya ada di komentar
+`alat/deploy-cf.mjs`:
+
+- wrangler 4.x mendelegasikan `pages project create` ke Workers, dan delegasi
+  itu gagal justru karena kita sedang menghindari Workers. `--force`
+  melewatinya, dan hanya diperlukan sekali saat pembuatan.
+- `wrangler pages deploy` menolak `--config` dengan path kustom, jadi konfignya
+  wajib bernama `wrangler.toml` di direktori kerjanya. Diberi folder `pages/`
+  sendiri supaya root repo tidak punya `wrangler.toml` kedua yang bisa tertukar
+  dengan milik Worker.
+- `pages deploy` tidak punya flag `--d1`, jadi pengikatan basis data memang
+  harus lewat berkas konfigurasi.
+
+#### `IP_SALT` dan `.cf-ip-salt`
+
+Rahasia di Cloudflare hanya bisa ditulis, tidak bisa dibaca balik. Tanpa
+salinan lokal, Worker dan Pages mustahil dibuat memakai salt yang sama, dan
+nilai `sidik` di keduanya tidak bisa dibandingkan. Karena itu saltnya disimpan
+di `.cf-ip-salt` yang **di-gitignore**.
+
+Penyelarasan hanya dilakukan kalau `suara_log` masih kosong. Begitu ada suara
+masuk, salt tidak pernah diputar: mengubahnya membuat setiap `sidik` yang sudah
+terbit tidak lagi cocok dengan yang baru.
+
+#### Menutup voting
+
+```bash
+# ubah VOTING_TUTUP = "1" di worker/wrangler.toml, lalu
+npm run deploy:cf
+```
+
+POST membalas `423`, GET tetap melayani. Untuk keputusan yang selesai dalam
+hitungan hari, ini jawaban paling lengkap atas penyalahgunaan: bekukan
+hasilnya, selesai.
+
+#### Cadangan
+
+```bash
+npm run cadangan      # wrangler d1 export -> cadangan/suara.sql
+```
+
+Sengaja operasi **lokal manual**, bukan di CI: menaruh `CLOUDFLARE_API_TOKEN`
+di GitHub Secrets membeli satu berkas `.sql` dan membayar dengan kredensial
+berumur panjang yang menetap di pihak ketiga.
 
 ---
 
@@ -303,8 +344,11 @@ data/
   api.json                  satu-satunya sumber alamat API
   hasil.json                cuplikan statis, dibaca saat backend tidak terjangkau
 video/                      dua mp4, dinamai ulang jadi web-safe
+pages/
+  wrangler.toml             konfigurasi Cloudflare Pages, DIBUAT OTOMATIS skrip
+  keluaran/                 hasil build (_worker.js), gitignore
 alat/
-  deploy-cf.mjs             deploy Worker + D1 sembilan langkah, idempoten
+  deploy-cf.mjs             deploy sembilan langkah, idempoten, dua jalur
   potong-matrix.mjs         matrix.json induk -> data/matrix.json
   ambil-deskripsi.mjs       scrape FB + TikTok sekali
   rapikan-deskripsi.mjs     sensor nomor + rapikan teks; punya uji mandiri
