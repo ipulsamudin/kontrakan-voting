@@ -120,26 +120,44 @@ voting hanya hidup selama laptop Anda menyala.
 
 ### Permanen, 24 jam
 
-Butuh akun Cloudflare gratis (tanpa kartu kredit). Sekali saja:
+Butuh akun Cloudflare gratis, tanpa kartu kredit. Daftar di
+<https://dash.cloudflare.com/sign-up>, lalu:
 
 ```bash
-npx wrangler login                                   # OAuth di browser
-npx wrangler d1 create kontrakan-voting              # salin database_id
-# tempel database_id ke worker/wrangler.toml
-npm run migrasi:remote
-node -e "console.log(require('crypto').randomBytes(32).toString('hex'))" \
-  | npx wrangler secret put IP_SALT --config worker/wrangler.toml
-npm run deploy                                       # mencetak URL *.workers.dev
+npx wrangler login     # OAuth lewat browser, sekali saja
+npm run deploy:cf      # sisanya satu perintah
 ```
 
-Lalu isi `data/api.json`:
+`npm run deploy:cf` mengerjakan sembilan langkah yang sebelumnya manual:
+membuat basis data D1 kalau belum ada, menulis `database_id` ke
+`worker/wrangler.toml`, menerapkan migrasi ke D1 remote, memasang rahasia
+`IP_SALT`, men-deploy Worker, **memverifikasi alamatnya sungguhan** dengan
+memanggil `/api/hasil`, lalu menulis alamat itu ke `data/api.json`.
 
-```json
-{ "dasar": "https://kontrakan-voting.<subdomain>.workers.dev" }
+Idempoten dan aman dijalankan ulang. Dua hal yang sengaja tidak diulang:
+basis data yang sudah ada dipakai lagi, dan `IP_SALT` yang sudah terpasang
+**tidak** diputar ulang -- mengganti salt membuat setiap `sidik` yang sudah
+diterbitkan tidak lagi cocok dengan yang baru, sehingga riwayat jadi tidak
+bisa dibandingkan antar-periode.
+
+Terakhir:
+
+```bash
+git add data/api.json worker/wrangler.toml
+git commit -m "feat: hidupkan voting lewat Worker + D1"
+git push
 ```
 
-Commit dan push. Workflow `Terbitkan` akan men-deploy ulang Pages, dan voting
-hidup tanpa laptop Anda.
+Workflow `Terbitkan` men-deploy ulang Pages, dan voting hidup tanpa laptop
+Anda menyala.
+
+Kuotanya: 5 juta baris dibaca per hari, 100.000 baris ditulis per hari,
+500 MB per basis data. Satu suara memakai sekitar lima baris tulis, jadi
+plafonnya sekitar 20.000 suara per hari.
+
+> Akun Cloudflare yang betul-betul baru kadang belum punya subdomain
+> `workers.dev`, dan itu diklaim sekali lewat dashboard. Kalau itu terjadi,
+> `npm run deploy:cf` mencetak instruksinya, bukan jejak tumpukan.
 
 ---
 
@@ -286,6 +304,7 @@ data/
   hasil.json                cuplikan statis, dibaca saat backend tidak terjangkau
 video/                      dua mp4, dinamai ulang jadi web-safe
 alat/
+  deploy-cf.mjs             deploy Worker + D1 sembilan langkah, idempoten
   potong-matrix.mjs         matrix.json induk -> data/matrix.json
   ambil-deskripsi.mjs       scrape FB + TikTok sekali
   rapikan-deskripsi.mjs     sensor nomor + rapikan teks; punya uji mandiri
@@ -329,6 +348,21 @@ test-ui.mjs                 browser; membawa server statis sendiri
   "GitHub Actions", push memakai `GITHUB_TOKEN` sengaja tidak memicu workflow
   lain -- jadi workflow cuplikan terpisah yang meng-commit tidak akan pernah
   men-deploy apa pun, dan cuplikannya duduk di git tanpa pernah terlihat.
+- **Alasan tombol kirim dinonaktifkan terbaca di sebelah tombolnya.**
+  Sebelumnya alasannya hanya ada di atribut `title` tombol dan di banner
+  puncak halaman. `title` tidak muncul sama sekali di HP, dan begitu orang
+  scroll ke formulir, banner itu sudah di luar layar -- yang tersisa cuma
+  tombol pudar tanpa keterangan apa pun. Sekarang ada elemen `.alasan-mati`
+  tepat di ATAS baris tombol, supaya terbaca sebelum orang mengetik alasan
+  panjang lalu menemukan suaranya tidak bisa dikirim. `setBisaKirim()` adalah
+  satu-satunya tempat yang menyetelnya, jadi tidak ada jalur yang bisa
+  menonaktifkan tombol tanpa ikut menjelaskan kenapa.
+- **`test-ui.mjs --situs` membaca `data/api.json` milik situsnya.** Kalau ia
+  berasumsi situs live tidak punya backend, seluruh blok "belum aktif" berubah
+  merah tepat ketika Worker berhasil di-deploy -- tes melaporkan kegagalan
+  padahal yang terjadi justru keberhasilan. Mode itu juga **tidak pernah**
+  mengirim suara ke situs live: memilih dari UI akan mencemari hasil yang
+  sedang dipakai orang mengambil keputusan.
 - **Halaman dan backend sebaiknya satu origin.** Chrome memblokir permintaan
   dari origin publik HTTPS ke alamat loopback lewat Private Network Access,
   jadi "GitHub Pages + `php -S` di laptop" tidak bekerja seberapa pun benar

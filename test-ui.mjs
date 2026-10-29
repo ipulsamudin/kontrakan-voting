@@ -275,6 +275,32 @@ if (!SITUS_LUAR) {
   }
 }
 
+/**
+ * Di mode --situs, situsnya sendiri yang menentukan punya backend atau tidak,
+ * lewat data/api.json miliknya -- bukan backend milik tes ini.
+ *
+ * Tanpa pembedaan ini, seluruh blok "belum aktif" di bawah berubah merah tepat
+ * ketika Worker berhasil di-deploy: tes melaporkan kegagalan padahal yang
+ * terjadi justru keberhasilan, dan itu mode gagal yang paling membingungkan.
+ */
+let dasarSitus = null;
+if (SITUS_LUAR) {
+  try {
+    const res = await fetch(new URL('data/api.json?_=' + Date.now(), URL_SITUS).href, {
+      signal: AbortSignal.timeout(15000),
+    });
+    const j = await res.json();
+    dasarSitus = j && j.dasar ? String(j.dasar) : null;
+  } catch (e) {
+    console.error('Peringatan: data/api.json situs tidak terbaca:', e.message);
+  }
+}
+
+/* Apakah HALAMAN yang diuji akan punya alamat API, dari sumber mana pun.
+   Dipakai untuk memilih kalimat mana yang diharapkan, bukan untuk memutuskan
+   assertion mana yang dilewati. */
+const halamanPunyaApi = Boolean(dasarApi || dasarSitus);
+
 /* ?api= dipakai untuk mengarahkan halaman ke backend uji, dan sekaligus
    menguji jalur override itu sendiri. 127.0.0.1 ada di allowlist halaman. */
 const URL_UJI =
@@ -303,6 +329,13 @@ page.on('pageerror', (e) => {
 const n = (s) => page.locator(s).count();
 
 console.log(`Membuka ${URL_UJI}`);
+if (SITUS_LUAR) {
+  console.log(
+    dasarSitus
+      ? `Situs ini SUDAH punya backend: ${dasarSitus}`
+      : 'Situs ini BELUM punya backend (data/api.json dasar = null)'
+  );
+}
 console.log(`Ekspektasi dihitung dari data/matrix.json: ${JSON.stringify(harap)}\n`);
 
 await page.goto(URL_UJI, { waitUntil: 'load', timeout: 30000 });
@@ -327,6 +360,31 @@ if (RELATIF) {
   cekBenar('satu origin: tidak disebut dari parameter ?api=', !catatan.includes('?api='), catatan);
 }
 
+if (SITUS_LUAR) {
+  const ringkasAwal = await page.locator('#ringkas').innerText();
+  const notaTampak = (await n('#alasan-mati.show')) === 1;
+  const notaTeks = await page.locator('#alasan-mati').innerText();
+  const kirimMati = await page.locator('#btn-kirim').isDisabled();
+
+  if (dasarSitus) {
+    cekBenar('situs live: tersambung ke backend', ringkasAwal.includes('Hasil langsung'), ringkasAwal);
+    cek('situs live: tombol kirim aktif', kirimMati, false);
+    /* Catatan alasan HARUS hilang saat tombolnya bisa dipakai. Diperiksa dua
+       arah, supaya catatan yang tidak pernah hilang tidak lolos sebagai lulus. */
+    cek('situs live: catatan alasan tidak tampil', notaTampak, false);
+  } else {
+    cekBenar('situs live: menampilkan cuplikan', ringkasAwal.includes('Cuplikan'), ringkasAwal);
+    cek('situs live: tombol kirim disabled', kirimMati, true);
+    cekBenar('situs live: catatan alasan tampil di sebelah tombol', notaTampak, notaTeks);
+    cekBenar('situs live: catatan menyebut belum aktif', /belum aktif/i.test(notaTeks), notaTeks);
+  }
+
+  /* Memilih dari UI akan mencemari hasil yang sedang dipakai orang mengambil
+     keputusan, jadi tes ini TIDAK pernah mengirim suara ke situs live.
+     Satu-suara-per-nama di deployment nyata dibuktikan terpisah lewat urutan
+     curl berprefiks uji- yang dibersihkan setelahnya. */
+}
+
 if (dasarApi && !RELATIF) {
   /* Diperiksa SEGERA dan secara eksplisit. Kalau CORS tidak terpasang,
      halaman diam-diam jatuh ke cuplikan statis dan tombol kirim jadi
@@ -340,6 +398,7 @@ if (dasarApi && !RELATIF) {
     ringkasAwal
   );
   cek('tombol kirim aktif', await page.locator('#btn-kirim').isDisabled(), false);
+  cek('catatan alasan tidak tampil saat tombol aktif', await n('#alasan-mati.show'), 0);
 }
 
 for (const h of harap) {
@@ -751,11 +810,22 @@ if (dasarApi) {
      berbeda: belum ada alamat server sama sekali, versus ada tapi tidak
      terjangkau. Assertion-nya ikut membedakan, bukan dilonggarkan sampai
      keduanya lolos. */
-  const polaBanner = dasarApi ? /tidak bisa dihubungi/i : /belum aktif/i;
+  const polaBanner = halamanPunyaApi ? /tidak bisa dihubungi/i : /belum aktif/i;
   cekBenar(
-    `backend mati: banner menjelaskan keadaannya (${dasarApi ? 'tak terjangkau' : 'belum ada alamat'})`,
+    `backend mati: banner menjelaskan keadaannya (${halamanPunyaApi ? 'tak terjangkau' : 'belum ada alamat'})`,
     polaBanner.test(banner),
     banner.slice(0, 200)
+  );
+
+  /* Inti perbaikan ini: alasannya harus terbaca DI SEBELAH tombol, bukan cuma
+     di banner puncak halaman yang sudah di luar layar begitu orang scroll ke
+     formulir. Itulah yang dilihat orang: tombol pudar tanpa keterangan. */
+  const nota = await page.locator('#alasan-mati').innerText();
+  cek('backend mati: catatan alasan tampil di sebelah tombol', await n('#alasan-mati.show'), 1);
+  cekBenar(
+    'backend mati: catatan alasan menjelaskan keadaannya',
+    polaBanner.test(nota),
+    nota.slice(0, 200)
   );
 
   /* Kartu video tetap harus terender: halaman berguna sebelum jaringan. */

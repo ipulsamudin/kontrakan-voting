@@ -214,6 +214,23 @@ button:focus-visible, a:focus-visible, .chip:focus-visible {
 }
 .sisa { font-size: 11px; color: var(--text-dim); font-variant-numeric: tabular-nums; text-align: right; }
 
+/* Alasan tombol kirim dinonaktifkan.
+   Sebelumnya alasannya hanya ada di atribut title tombol dan di banner paling
+   atas halaman. Atribut title tidak muncul sama sekali di HP, dan setelah
+   orang scroll ke formulir, banner atas sudah di luar layar -- yang tersisa
+   cuma tombol pudar tanpa keterangan apa pun di dekatnya. Padahal halaman ini
+   terutama dibuka dari tautan WhatsApp di HP. */
+.alasan-mati {
+  display: none;
+  margin: 0;
+  font-size: 13px; color: var(--text-dim);
+  padding: 9px 11px; border-radius: 8px;
+  background: var(--surface-2);
+  border: 1px solid var(--border); border-left: 3px solid var(--warn);
+}
+.alasan-mati.show { display: block; }
+.alasan-mati strong { color: var(--text); }
+
 button {
   font: inherit; cursor: pointer; border-radius: 8px;
   border: 1px solid var(--border); background: var(--surface-2); color: var(--text);
@@ -325,6 +342,11 @@ footer a { color: var(--text-dim); }
                   placeholder="Kenapa pilih yang itu?"></textarea>
         <div class="sisa" id="sisa-alasan"></div>
       </div>
+
+      <!-- Di ATAS baris tombol, bukan di bawahnya: supaya terbaca sebelum
+           orang mengetik alasan panjang lalu menemukan suaranya tidak bisa
+           dikirim. -->
+      <p class="alasan-mati" id="alasan-mati"></p>
 
       <div class="actions">
         <button type="button" class="primary" id="btn-kirim" data-act="kirim">Kirim suara</button>
@@ -813,11 +835,32 @@ async function ambilJson(alamat, opsi = {}) {
   }
 }
 
-/** Menyetel bisa/tidaknya mengirim suara, beserta alasannya di tombol. */
-function setBisaKirim(bisa, alasan) {
+/**
+ * Menyetel bisa/tidaknya mengirim suara, beserta alasannya.
+ *
+ * Alasannya ditulis ke elemen yang TERLIHAT di sebelah tombol, bukan cuma ke
+ * atribut title. Title tidak pernah muncul di HP, dan banner di puncak halaman
+ * sudah di luar layar begitu orang scroll ke formulir -- jadi yang tersisa
+ * hanya tombol pudar tanpa penjelasan.
+ *
+ * Ini satu-satunya tempat yang menyetel keduanya, supaya tidak ada jalur baru
+ * yang menonaktifkan tombol tanpa ikut menjelaskan kenapa.
+ */
+function setBisaKirim(bisa, alasanHtml) {
   const b = el('btn-kirim');
   b.disabled = !bisa;
-  b.title = bisa ? '' : alasan || '';
+
+  const nota = el('alasan-mati');
+  if (bisa || !alasanHtml) {
+    nota.innerHTML = '';
+    nota.classList.remove('show');
+    b.title = '';
+    return;
+  }
+  nota.innerHTML = alasanHtml;
+  nota.classList.add('show');
+  /* title tetap diisi sebagai pelengkap untuk pembaca layar dan hover. */
+  b.title = nota.textContent;
 }
 
 async function muatHasil() {
@@ -831,7 +874,10 @@ async function muatHasil() {
       if (r.ok && r.json && r.json.ok) {
         hideBanner();
         renderHasil(r.json);
-        setBisaKirim(!r.json.tutup, 'Voting sudah ditutup.');
+        setBisaKirim(
+          !r.json.tutup,
+          '<strong>Voting sudah ditutup.</strong> Hasilnya tetap bisa dilihat di bawah.'
+        );
         if (r.json.tutup) {
           showBanner('<strong>Voting sudah ditutup.</strong> Hasilnya tetap bisa dilihat di bawah.');
         }
@@ -850,7 +896,19 @@ async function muatHasil() {
     const r = await ambilJson('data/hasil.json?_=' + Date.now(), { batasMs: 6000 });
     if (r.ok && r.json) {
       renderHasil(r.json);
-      setBisaKirim(false, 'Server suara belum bisa dihubungi.');
+
+      /* Dua keadaan yang berbeda, dan memang pantas dijelaskan berbeda:
+         belum ada alamat server sama sekali, versus ada tapi tidak terjangkau.
+         Menyamakan keduanya membuat orang mengira sistemnya rusak padahal ia
+         memang belum dinyalakan. */
+      setBisaKirim(
+        false,
+        dasarApi
+          ? '<strong>Server suara sedang tidak bisa dihubungi,</strong> jadi suaramu ' +
+              'belum bisa dikirim. Coba tekan "Muat ulang hasil" sebentar lagi.'
+          : '<strong>Voting belum aktif.</strong> Halaman ini belum punya server ' +
+              'untuk menyimpan suara, jadi baru bisa menampilkan hasil.'
+      );
 
       if (dasarApi) {
         showBanner(
@@ -874,7 +932,7 @@ async function muatHasil() {
   }
 
   el('hasil').innerHTML = '<p class="empty">Hasil tidak bisa dimuat.</p>';
-  setBisaKirim(false, 'Hasil tidak bisa dimuat.');
+  setBisaKirim(false, '<strong>Hasil tidak bisa dimuat.</strong> Coba muat ulang halaman ini.');
   showBanner('<strong>Hasil tidak bisa dimuat.</strong> Coba muat ulang halaman ini.');
 }
 
@@ -1016,7 +1074,11 @@ async function muat() {
       '<strong>Halaman ini harus dibuka lewat server, bukan berkas langsung.</strong> ' +
         'Jalankan XAMPP lalu buka <code>http://localhost/kontrakan-voting/</code>.'
     );
-    setBisaKirim(false, 'Harus dibuka lewat http.');
+    setBisaKirim(
+      false,
+      '<strong>Halaman ini dibuka sebagai berkas, bukan lewat server.</strong> ' +
+        'Buka lewat <code>http://localhost/kontrakan-voting/</code>.'
+    );
     return;
   }
 
@@ -1036,7 +1098,10 @@ async function muat() {
 
   if (!dataVideo || !dataMatrix) {
     el('klips').innerHTML = '<p class="empty">Data video tidak bisa dimuat.</p>';
-    setBisaKirim(false, 'Data video tidak bisa dimuat.');
+    setBisaKirim(
+      false,
+      '<strong>Data video tidak bisa dimuat,</strong> jadi tidak ada yang bisa dipilih.'
+    );
     showBanner('<strong>Data video tidak bisa dimuat.</strong> Pastikan folder <code>data/</code> ikut terbawa.');
     return;
   }

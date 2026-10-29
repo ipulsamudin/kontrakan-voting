@@ -21,7 +21,8 @@
     "cuplikan": "python alat/cuplikan.py",
     "test:ui:relatif": "node test-ui.mjs --relatif",
     "rapikan": "node alat/rapikan-deskripsi.mjs",
-    "test:rapikan": "node alat/rapikan-deskripsi.mjs --uji"
+    "test:rapikan": "node alat/rapikan-deskripsi.mjs --uji",
+    "deploy:cf": "node alat/deploy-cf.mjs"
   },
   "devDependencies": {
     "playwright-core": "^1.48.0"
