@@ -400,6 +400,71 @@ for (const h of harap) {
   cek('dua tautan ke postingan asli', await n('article.card .actions a.btn'), 2);
 }
 
+/* --- 1b2. kerapihan deskripsi ----------------------------------------- */
+
+{
+  /* Caption TikTok datang dari sumbernya sebagai SATU baris raksasa tanpa
+     pemisah apa pun. alat/rapikan-deskripsi.mjs memecahnya; assertion di sini
+     menahan supaya kerapihan itu tidak hilang diam-diam kalau alat itu diubah
+     atau datanya di-scrape ulang dengan versi lama.
+
+     Polanya ditulis ulang di sini, bukan diimpor dari alat itu, mengikuti
+     prinsip yang sama dengan parser matrix.json: alat yang diuji tidak boleh
+     jadi satu-satunya penentu benar-tidaknya hasilnya sendiri. */
+
+  /* Emoji yang SAMA berulang tiga kali atau lebih: itu persis bentuk garis
+     hias di postingan aslinya. Memakai backreference, bukan "dua emoji
+     berdampingan", supaya emoji ZWJ yang sah seperti juru masak berkulit
+     terang tidak ikut tertuduh. */
+  const DERET_HIAS = /(\p{Extended_Pictographic})\1{2,}/u;
+  const BARIS_TAGAR = /^#\S+(?:\s+#\S+)*$/;
+  const PENANDA_SENSOR = /\[nomor[^\]]*\]/g;
+
+  for (const v of video.video) {
+    if (v.status_ambil !== 'berhasil' && v.status_ambil !== 'manual') continue;
+
+    const baris = v.deskripsi.split('\n').map((b) => b.trim());
+
+    cekBenar(`deskripsi ${v.id}: terpecah jadi beberapa baris`, baris.length >= 5, `${baris.length} baris`);
+
+    cekBenar(
+      `deskripsi ${v.id}: tidak ada deretan emoji hias`,
+      !DERET_HIAS.test(v.deskripsi),
+      (v.deskripsi.match(new RegExp(DERET_HIAS.source, 'gu')) || [])[0] || ''
+    );
+
+    cekBenar(
+      `deskripsi ${v.id}: tidak ada baris tagar`,
+      !baris.some((b) => BARIS_TAGAR.test(b)),
+      baris.find((b) => BARIS_TAGAR.test(b)) || ''
+    );
+
+    /* Baris yang tinggal menyisakan label setelah nomornya disensor tidak
+       memberi informasi apa pun, dan kartunya sudah punya tombol ke
+       postingan aslinya. */
+    const kontakKosong = baris.find(
+      (b) =>
+        PENANDA_SENSOR.test(b) &&
+        b.replace(PENANDA_SENSOR, '').replace(/[^\p{L}\p{N}]/gu, '').length < 12
+    );
+    cekBenar(`deskripsi ${v.id}: tidak ada baris kontak kosong`, !kontakKosong, kontakKosong || '');
+
+    cekBenar(
+      `deskripsi ${v.id}: tidak ada baris yang isinya hanya emoji`,
+      !baris.some((b) => b.length > 0 && !/[\p{L}\p{N}]/u.test(b)),
+      baris.find((b) => b.length > 0 && !/[\p{L}\p{N}]/u.test(b)) || ''
+    );
+
+    /* Dan yang paling menentukan: teks rapi itu benar-benar sampai ke layar
+       dengan baris-barisnya utuh, bukan runtuh jadi satu paragraf karena
+       white-space CSS-nya salah. */
+    const kartu = `article.card[data-kandidat="${v.id}"]`;
+    const tampil = await page.locator(`${kartu} .deskripsi`).innerText();
+    const barisTampil = tampil.split('\n').filter((b) => b.trim()).length;
+    cekBenar(`deskripsi ${v.id}: baris terjaga saat dirender`, barisTampil >= 5, `${barisTampil} baris di layar`);
+  }
+}
+
 /* --- 1c. catatan harga iklan ------------------------------------------ */
 
 {

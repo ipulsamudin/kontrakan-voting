@@ -13,13 +13,15 @@
     "cadangan": "wrangler d1 export kontrakan-voting --remote --output cadangan/suara.sql --config worker/wrangler.toml",
     "bagikan": "cloudflared tunnel --url http://localhost",
     "potong-matrix": "node alat/potong-matrix.mjs",
-    "test": "node test-api.mjs && node test-api.mjs --worker && node test-ui.mjs && node test-ui.mjs --relatif && node test-ui.mjs --tanpa-api",
+    "test": "node alat/rapikan-deskripsi.mjs --uji && node test-api.mjs && node test-api.mjs --worker && node test-ui.mjs && node test-ui.mjs --relatif && node test-ui.mjs --tanpa-api",
     "test:api": "node test-api.mjs",
     "test:ui": "node test-ui.mjs",
     "test:worker": "node test-api.mjs --worker",
     "test:ui:cuplikan": "node test-ui.mjs --tanpa-api",
     "cuplikan": "python alat/cuplikan.py",
-    "test:ui:relatif": "node test-ui.mjs --relatif"
+    "test:ui:relatif": "node test-ui.mjs --relatif",
+    "rapikan": "node alat/rapikan-deskripsi.mjs",
+    "test:rapikan": "node alat/rapikan-deskripsi.mjs --uji"
   },
   "devDependencies": {
     "playwright-core": "^1.48.0"

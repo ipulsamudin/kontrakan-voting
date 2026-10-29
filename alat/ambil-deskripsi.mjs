@@ -5,6 +5,10 @@
  *   node alat/ambil-deskripsi.mjs            headless
  *   node alat/ambil-deskripsi.mjs --tampak   browser terlihat, untuk login manual
  *
+ * Pembersihan dan perapihan teksnya ada di alat/rapikan-deskripsi.mjs, bukan
+ * di sini, supaya bisa diterapkan ulang ke data yang sudah tersimpan tanpa
+ * men-scrape lagi -- dan supaya bisa diuji sebagai fungsi murni.
+ *
  * Kode scraper-nya TIDAK disalin ke repo ini. Yang dipakai adalah milik project
  * induk di ../Kontrakan/scraper, karena di situlah playwright-core dan profil
  * browser yang sudah login berada. Repo publik ini tidak perlu membawa mesin
@@ -50,67 +54,11 @@ if (!fs.existsSync(INDUK)) {
   process.exit(1);
 }
 
+import { sensorNomor, buangKepalaFb, rapikanDeskripsi } from './rapikan-deskripsi.mjs';
+
 const url = (p) => 'file:///' + path.resolve(INDUK, p).replace(/\\/g, '/');
 const { launchBrowser, metaContent } = await import(url('sources/browser.js'));
 const { readPermalink } = await import(url('sources/facebook.js'));
-
-/**
- * Menyensor nomor telepon.
- *
- * Repo ini PUBLIK, dan deskripsi yang terambil memuat nomor kontak pemilik
- * kontrakan: orang ketiga yang tidak terlibat dalam keputusan ini. Nomornya
- * memang sudah tayang di Facebook dan TikTok, tapi menyalinnya ke repo GitHub
- * adalah penerbitan ulang -- tindakan yang berbeda, dan yang membuatnya
- * terindeks serta terunduh di tempat yang tidak mereka pilih.
- *
- * Halaman voting tidak membutuhkannya: pemilih memilih rumah, bukan menelepon
- * pemiliknya, dan tombol ke postingan asli tetap tersedia bagi yang perlu.
- *
- * Polanya menuntut minimal delapan digit setelah awalan 0 atau 62, jadi
- * "800 ribu" dan "850" di teks harga tidak ikut tersensor.
- */
-function sensorNomor(teks) {
-  return String(teks || '').replace(
-    /(?:\+?62|0)[ .-]?8\d{1,2}[ .-]?\d{3,4}[ .-]?\d{3,5}/g,
-    '[nomor ada di postingan aslinya]'
-  );
-}
-
-/**
- * Membuang kepala halaman Facebook: nama grup, nama pemosting, dan penanda
- * waktu relatif. Itu chrome, bukan isi postingan -- dan nama pemosting adalah
- * data pribadi yang tidak perlu ikut diterbitkan ulang.
- *
- * Dipotong sampai baris pertama yang panjangnya wajar dan bukan penanda waktu,
- * bukan dengan jumlah baris tetap, karena tinggi kepalanya berubah-ubah.
- */
-function buangKepalaFb(teks) {
-  const baris = String(teks || '').split('\n');
-  let i = 0;
-  while (i < baris.length && i < 12) {
-    const b = baris[i].trim();
-    const penandaWaktu = /^\d+\s*(detik|menit|jam|hari|minggu|bulan|tahun)/i.test(b);
-    const pemisah = b === '\u00b7' || b === '' || b === '-';
-    const pendek = b.length < 25;
-    if (penandaWaktu || pemisah || pendek) {
-      i++;
-      continue;
-    }
-    break;
-  }
-  return baris.slice(i).join('\n');
-}
-
-/** Membuang baris yang jelas-jelas chrome situs, bukan isi postingan. */
-function rapikan(teks) {
-  return String(teks || '')
-    .split('\n')
-    .map((b) => b.trim())
-    .filter((b) => b.length > 0)
-    .filter((b) => !/^(Suka|Komentari|Bagikan|Like|Comment|Share|Balas|Reply)$/i.test(b))
-    .join('\n')
-    .trim();
-}
 
 /**
  * Tanda-tanda bahwa yang terambil bukan isi postingan melainkan dinding login
@@ -141,7 +89,7 @@ try {
 
     if (v.sumber_jenis === 'Facebook') {
       const r = await readPermalink(ctx, v.sumber_url);
-      if (r.ok) teks = sensorNomor(rapikan(buangKepalaFb(r.post)));
+      if (r.ok) teks = rapikanDeskripsi(sensorNomor(buangKepalaFb(r.post)));
       else alasanGagal = r.reason;
     } else if (v.sumber_jenis === 'TikTok') {
       const page = await ctx.newPage();
@@ -158,7 +106,7 @@ try {
             .innerText({ timeout: 5000 })
             .catch(() => null);
         }
-        teks = sensorNomor(rapikan(teks));
+        teks = rapikanDeskripsi(sensorNomor(teks));
       } catch (e) {
         alasanGagal = String(e.message).split('\n')[0].slice(0, 80);
       } finally {

@@ -187,6 +187,18 @@ Yang sengaja **tidak** dipakai:
 
 ## Data dan privasi
 
+- **Deskripsi dirapikan, bukan ditempel apa adanya.** Caption TikTok datang
+  sebagai satu baris raksasa: emoji dipakai sebagai penanda butir, deretan
+  emoji sebagai garis pemisah, dan kata saling menempel di batasnya
+  (`dllCATATAN:`). Dibiarkan begitu ia jadi dinding teks yang tidak terbaca di
+  HP, padahal justru di HP halaman ini dibuka.
+  `alat/rapikan-deskripsi.mjs` memecahnya jadi baris, membuang deretan emoji
+  hias dan baris tagar, serta membuang baris kontak yang sudah kosong setelah
+  nomornya disensor. Fungsinya idempoten dan punya uji mandiri
+  (`npm run test:rapikan`), jadi bisa diterapkan ulang ke data yang sudah
+  tersimpan tanpa perlu men-scrape lagi (`npm run rapikan`) -- berguna karena
+  scrape bergantung pada Facebook dan TikTok mau melayani, sedangkan merapikan
+  teks tidak.
 - **Nomor telepon disensor.** Deskripsi yang diambil dari Facebook dan TikTok
   memuat nomor kontak pemilik kontrakan. Nomornya sudah tayang di kedua
   platform, tapi menyalinnya ke repo publik adalah penerbitan ulang: tindakan
@@ -217,6 +229,7 @@ npm run test:worker    # kontrak API yang SAMA terhadap Worker + D1 lokal
 npm run test:ui        # browser, dengan backend hidup
 npm run test:ui:cuplikan   # browser, jalur cuplikan statis saja
 npm run test:ui:relatif    # browser, susunan satu origin seperti di XAMPP
+npm run test:rapikan       # uji mandiri perapih deskripsi (fungsi murni, cepat)
 ```
 
 Tidak butuh XAMPP menyala: `test-ui.mjs` membawa server `node:http` sendiri,
@@ -274,7 +287,8 @@ data/
 video/                      dua mp4, dinamai ulang jadi web-safe
 alat/
   potong-matrix.mjs         matrix.json induk -> data/matrix.json
-  ambil-deskripsi.mjs       scrape FB + TikTok sekali, dengan penyensoran nomor
+  ambil-deskripsi.mjs       scrape FB + TikTok sekali
+  rapikan-deskripsi.mjs     sensor nomor + rapikan teks; punya uji mandiri
   normalkan-cli.php         membuka normalkan() PHP ke CLI untuk dibandingkan tes
   cuplikan.py               hasil API -> data/hasil.json, idempoten
 test-api.mjs                kontrak API; dijalankan terhadap kedua backend
