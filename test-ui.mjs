@@ -400,6 +400,39 @@ for (const h of harap) {
   cek('dua tautan ke postingan asli', await n('article.card .actions a.btn'), 2);
 }
 
+/* --- 1c. catatan harga iklan ------------------------------------------ */
+
+{
+  /* Harga sebenarnya datang dari matrix.json; postingan aslinya kadang
+     menyebut angka lain. Kalau berbeda, halaman HARUS menyebutkan keduanya:
+     tanpa itu pemilih membaca "800 RIBU" di deskripsi tepat di bawah header
+     "Rp 700rb" dan menyimpulkan halaman ini salah.
+     Kalau sama, catatannya tidak boleh muncul -- kalau tidak, ia cuma derau. */
+  for (let i = 0; i < harap.length; i++) {
+    const v = video.video[i];
+    const kartu = `article.card[data-kandidat="${v.id}"]`;
+    const adaCatatan = (await page.locator(`${kartu} .harga-iklan`).count()) === 1;
+    const berbeda = v.harga_iklan != null && v.harga_iklan !== harap[i].harga;
+
+    cek(`kartu ${v.id}: catatan harga iklan muncul hanya bila berbeda`, adaCatatan, berbeda);
+
+    if (berbeda) {
+      const teksCatatan = await page.locator(`${kartu} .harga-iklan`).innerText();
+      const hargaIklan = 'Rp ' + v.harga_iklan.toLocaleString('id-ID') + 'rb';
+      cekBenar(
+        `kartu ${v.id}: catatan menyebut ${hargaIklan}`,
+        teksCatatan.includes(hargaIklan),
+        teksCatatan
+      );
+
+      /* Harga sebenarnya tetap yang menonjol, bukan tertukar dengan iklan. */
+      const hargaUtama = await page.locator(`${kartu} .price`).innerText();
+      const hargaBenar = 'Rp ' + harap[i].harga.toLocaleString('id-ID') + 'rb';
+      cekBenar(`kartu ${v.id}: header tetap harga sebenarnya`, hargaUtama.includes(hargaBenar), hargaUtama);
+    }
+  }
+}
+
 cekBenar(
   'kedua waktu tempuh BERBEDA di layar',
   harap[0].menit !== harap[1].menit,

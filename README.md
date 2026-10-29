@@ -6,7 +6,8 @@ video, memilih satu, dan menulis alasannya. Hasilnya bisa dilihat siapa saja.
 | | Kandidat A | Kandidat B |
 |---|---|---|
 | Lokasi | Sukamaju, Cilodong | GOR Candik Ayu, Jatijajar |
-| Sewa | Rp 850rb / bulan | Rp 800rb / bulan |
+| Sewa | Rp 850rb / bulan | **Rp 700rb / bulan** |
+| Disebut postingan | Rp 850rb | Rp 800rb |
 | Jarak dari rumah | 7,1 km | 7,7 km |
 | Waktu tempuh | 7,1 menit | 7,5 menit |
 | Penjelasan | [postingan Facebook](https://web.facebook.com/groups/infokontrakandepok/permalink/3092601260946147/) | [video TikTok](https://www.tiktok.com/@infokontrakandepok/video/7695235893396901127) |
@@ -14,6 +15,13 @@ video, memilih satu, dan menulis alasannya. Hasilnya bisa dilihat siapa saja.
 Angka jarak dan waktu tempuh berasal dari Google Distance Matrix, disimpan di
 `data/matrix.json`. Matriksnya **asimetris** (rumah ke A 7,1 menit, A ke rumah
 7,5 menit), jadi yang ditampilkan selalu arah "dari rumah".
+
+Harga sewa juga datang dari `data/matrix.json`, bukan dari teks postingan.
+Untuk kandidat B keduanya **berbeda**: postingan TikTok-nya menyebut 800 ribu,
+sementara harga sebenarnya 700 ribu. Kartu B karena itu menampilkan keduanya --
+tanpa itu, pemilih membaca "800 RIBU" di deskripsi tepat di bawah header
+"Rp 700rb" dan menyimpulkan halamannya salah. Ini mengikuti konvensi project
+induk yang memisahkan klaim iklan dari fakta yang sudah dikonfirmasi sendiri.
 
 ---
 
@@ -279,6 +287,13 @@ test-ui.mjs                 browser; membawa server statis sendiri
 - **`data/video.json` tidak memuat harga, jarak, atau waktu tempuh.** Angka itu
   diturunkan dari `data/matrix.json` lewat `matrix_index`, supaya tidak ada dua
   sumber angka yang bisa berbeda. Tes menurunkannya ulang dengan parser sendiri.
+  Satu pengecualian: `harga_iklan`, yang bukan duplikat melainkan data berbeda
+  -- angka yang diklaim postingan aslinya. Ia hanya ditampilkan kalau berbeda
+  dari harga sebenarnya, dan ada assertion bahwa ia **tidak** muncul kalau sama.
+- **Harga diperbaiki di hulu, bukan di turunannya.** `data/matrix.json`
+  di-generate dari `../Kontrakan/matrix.json` oleh `alat/potong-matrix.mjs`.
+  Menambal turunannya saja akan tertimpa diam-diam pada `npm run potong-matrix`
+  berikutnya, jadi koreksi harga harus masuk ke berkas induk dulu.
 - **Log dijamin trigger basis data, bukan disiplin kode.** Dengan dua statement
   di aplikasi, kode harus ingat mencatat, dan menentukan `aksi` butuh `SELECT`
   pendahulu yang bisa berbalapan: dua POST serentak untuk nama yang sama
