@@ -12,7 +12,7 @@ database_name = "kontrakan-voting"
 # Diisi oleh `npx wrangler d1 create kontrakan-voting`. Nilai ini TIDAK rahasia
 # -- ia cuma UUID yang tidak berguna tanpa autentikasi akun -- jadi ia memang
 # di-commit, supaya konfigurasinya bisa direproduksi.
-database_id = "ISI-DARI-wrangler-d1-create"
+database_id = "c1806537-6938-45dc-a648-4d8750b02682"
 
 # Skema yang SAMA dengan yang dipakai lokal/api.php. Satu berkas migrasi,
 # dua backend, nol duplikasi -- ini yang membuat D1 (yang memang SQLite)

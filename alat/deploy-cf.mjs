@@ -199,13 +199,24 @@ let alamat = null;
 {
   const r = wrangler(['deploy', '--config', KONFIG]);
   if (r.kode !== 0) {
+    /* Akun Cloudflare yang betul-betul baru belum punya subdomain
+       workers.dev. Itu pilihan sekali seumur akun -- namanya jadi bagian dari
+       URL SETIAP Worker di akun itu -- jadi memang tidak diotomatiskan.
+       wrangler mencetak tautan onboarding yang spesifik per akun; tautan itu
+       dipetik supaya yang ditampilkan bukan instruksi umum. */
     const butuhSubdomain = /subdomain/i.test(r.keluaran);
+    const onboarding = /https:\/\/dash\.cloudflare\.com\/[^\s"']+\/workers\/onboarding/.exec(
+      r.keluaran
+    );
     berhenti(
       'deploy gagal.',
       butuhSubdomain
-        ? 'Sepertinya akun ini belum punya subdomain workers.dev.\n' +
-            'Buka https://dash.cloudflare.com -> Workers & Pages -> Overview,\n' +
-            'klaim subdomain sekali, lalu jalankan ulang perintah ini.'
+        ? 'Akun ini belum punya subdomain workers.dev, dan itu diklaim sekali\n' +
+            'lewat dashboard. Buka:\n\n    ' +
+            (onboarding ? onboarding[0] : 'https://dash.cloudflare.com -> Workers & Pages') +
+            '\n\nPilih nama subdomain (bebas, mis. nama Anda sendiri), lalu jalankan\n' +
+            'ulang `npm run deploy:cf`. Basis data dan rahasia yang sudah dibuat\n' +
+            'akan dipakai ulang, bukan dibuat ganda.'
         : 'Baca keluaran di atas untuk penyebabnya, lalu jalankan ulang.'
     );
   }
