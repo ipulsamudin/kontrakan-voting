@@ -35,6 +35,13 @@ const DIR_SHOT = path.join(AKAR, 'screenshot');
 
 const arg = process.argv.slice(2);
 const TANPA_API = arg.includes('--tanpa-api');
+
+/* --relatif menguji susunan SATU ORIGIN: halaman dan backend dilayani dari
+   origin yang sama, dengan data/api.json berisi alamat relatif.
+   Itulah satu-satunya susunan yang bekerja tanpa akun Cloudflare, karena
+   Chrome memblokir permintaan dari origin publik HTTPS ke loopback lewat
+   Private Network Access. Diuji, bukan cuma ditulis di README. */
+const RELATIF = arg.includes('--relatif');
 const iSitus = arg.indexOf('--situs');
 const SITUS_LUAR = iSitus >= 0 ? arg[iSitus + 1] : null;
 
@@ -103,9 +110,52 @@ const TIPE = {
   '.png': 'image/png',
 };
 
+const PREFIKS_API = '/lokal/api.php';
+
 function layaniStatis(port) {
-  const srv = http.createServer((req, res) => {
-    let jalur = decodeURIComponent(new URL(req.url, 'http://x').pathname);
+  const srv = http.createServer(async (req, res) => {
+    const alamat = new URL(req.url, 'http://x');
+    let jalur = decodeURIComponent(alamat.pathname);
+
+    /* Mode --relatif: teruskan /lokal/api.php/* ke backend PHP, supaya
+       halaman dan API benar-benar satu origin seperti di XAMPP. */
+    if (RELATIF && jalur.startsWith(PREFIKS_API)) {
+      const sisa = jalur.slice(PREFIKS_API.length) || '/';
+      const tujuan = `http://127.0.0.1:${PORT_API}${sisa}${alamat.search}`;
+      try {
+        const badan = ['GET', 'HEAD'].includes(req.method)
+          ? undefined
+          : await new Promise((selesai) => {
+              const potongan = [];
+              req.on('data', (c) => potongan.push(c));
+              req.on('end', () => selesai(Buffer.concat(potongan)));
+            });
+
+        const hulu = await fetch(tujuan, {
+          method: req.method,
+          headers: { 'Content-Type': req.headers['content-type'] || 'text/plain' },
+          body: badan,
+        });
+        const teks = await hulu.text();
+        res.writeHead(hulu.status, {
+          'Content-Type': hulu.headers.get('content-type') || 'application/json',
+          'Cache-Control': 'no-store',
+        });
+        res.end(teks);
+      } catch (e) {
+        res.writeHead(502, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ ok: false, kode: 'proxy-gagal', pesan: String(e.message) }));
+      }
+      return;
+    }
+
+    /* Mode --relatif: api.json ditimpa supaya menunjuk alamat relatif. */
+    if (RELATIF && jalur === '/data/api.json') {
+      res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' });
+      res.end(JSON.stringify({ dasar: 'lokal/api.php' }));
+      return;
+    }
+
     if (jalur === '/' || jalur === '') jalur = '/index.html';
 
     const berkas = path.join(AKAR, jalur);
@@ -227,7 +277,8 @@ if (!SITUS_LUAR) {
 
 /* ?api= dipakai untuk mengarahkan halaman ke backend uji, dan sekaligus
    menguji jalur override itu sendiri. 127.0.0.1 ada di allowlist halaman. */
-const URL_UJI = dasarApi ? `${URL_SITUS}?api=${encodeURIComponent(dasarApi)}` : URL_SITUS;
+const URL_UJI =
+  dasarApi && !RELATIF ? `${URL_SITUS}?api=${encodeURIComponent(dasarApi)}` : URL_SITUS;
 
 const browser = await chromium.launch({ channel: 'chrome', headless: true });
 const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 }, locale: 'id-ID' });
@@ -263,7 +314,20 @@ await page.waitForTimeout(400);
 cek('dua kartu kandidat dirender', await n('article.card[data-kandidat]'), 2);
 cek('dua elemen video', await n('video.klip'), 2);
 
-if (dasarApi) {
+if (RELATIF) {
+  /* Susunan satu origin: tidak ada ?api=, alamatnya relatif dari api.json,
+     dan footer harus menyebut "halaman ini" bukan melempar karena
+     new URL() pada alamat relatif. */
+  const ringkasAwal = await page.locator('#ringkas').innerText();
+  cekBenar('satu origin: API tersambung tanpa ?api=', ringkasAwal.includes('Hasil langsung'), ringkasAwal);
+  cek('satu origin: tombol kirim aktif', await page.locator('#btn-kirim').isDisabled(), false);
+
+  const catatan = await page.locator('#catatan-api').innerText();
+  cekBenar('satu origin: footer menyebut halaman ini', catatan.includes('halaman ini'), catatan);
+  cekBenar('satu origin: tidak disebut dari parameter ?api=', !catatan.includes('?api='), catatan);
+}
+
+if (dasarApi && !RELATIF) {
   /* Diperiksa SEGERA dan secara eksplisit. Kalau CORS tidak terpasang,
      halaman diam-diam jatuh ke cuplikan statis dan tombol kirim jadi
      disabled -- lalu seluruh blok uji di bawah gagal karena timeout klik,

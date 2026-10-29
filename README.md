@@ -62,43 +62,53 @@ sama, dengan mekanisme yang berbeda.
 
 ### Lokal, untuk Anda sendiri
 
-```bash
-npm install                 # hanya playwright-core, untuk tes
-npm run dev:php             # backend di http://127.0.0.1:8787
+Taruh folder ini di `htdocs` XAMPP, nyalakan Apache, lalu isi `data/api.json`:
+
+```json
+{ "dasar": "lokal/api.php" }
 ```
 
-Lalu buka halamannya. Dua cara:
+Buka `http://localhost/kontrakan-voting/`. Selesai: Apache melayani halaman
+**dan** backend-nya, jadi keduanya satu origin.
 
-- lewat XAMPP: `http://localhost/kontrakan-voting/`
-- atau server statis apa pun; jangan `file://`, karena `fetch()` tidak bisa
-  membaca berkas tetangga dari sana (halaman akan memberi tahu kalau ini terjadi)
+Tanpa XAMPP, backend bisa dijalankan sendiri:
 
-Arahkan halaman ke backend dengan `?api=http://127.0.0.1:8787`, atau isi
-`data/api.json` field `dasar`.
+```bash
+npm install          # hanya playwright-core, untuk tes
+npm run dev:php      # backend di http://127.0.0.1:8787
+```
+
+lalu buka halaman lewat server statis apa pun dengan
+`?api=http://127.0.0.1:8787`. Jangan `file://`: `fetch()` tidak bisa membaca
+berkas tetangga dari sana, dan halaman akan memberi tahu kalau ini terjadi.
 
 ### Dibagikan ke orang lain, tanpa akun apa pun
 
+Arahkan quick tunnel ke **XAMPP**, bukan ke backend saja:
+
 ```bash
-npm run dev:php             # terminal 1
-npm run bagikan             # terminal 2 -> URL https://xxxx.trycloudflare.com
+npm run bagikan      # cloudflared tunnel --url http://localhost
 ```
 
-`cloudflared tunnel --url` tidak butuh akun Cloudflare. Bagikan:
+`cloudflared` mencetak URL `https://xxxx.trycloudflare.com`. Bagikan:
 
 ```
-https://ipulsamudin.github.io/kontrakan-voting/?api=https://xxxx.trycloudflare.com
+https://xxxx.trycloudflare.com/kontrakan-voting/
 ```
+
+Satu origin untuk halaman dan API, jadi tidak ada CORS dan tidak ada
+`?api=` yang perlu ditempel. `cloudflared tunnel --url` tidak butuh akun
+Cloudflare.
 
 Batasannya nyata: URL-nya berubah setiap `cloudflared` dijalankan ulang, dan
 voting hanya hidup selama laptop Anda menyala.
 
-**Kenapa harus lewat tunnel, bukan alamat LAN:** halaman di GitHub Pages
-dilayani lewat HTTPS. Browser memperlakukan `http://localhost` sebagai origin
-terpercaya sehingga HTTPS ke localhost tidak diblokir, tapi HTTPS ke
-`http://192.168.x.x` **diblokir** sebagai mixed content. Tunnel memberi HTTPS di
-kedua sisi. Kalau mau orang di jaringan yang sama ikut vote tanpa tunnel, minta
-mereka membuka halamannya dari XAMPP Anda (`http://<ip-anda>/kontrakan-voting/`),
-bukan dari Pages.
+> **Jangan gabungkan halaman GitHub Pages dengan backend di localhost.**
+> Chrome memblokirnya lewat Private Network Access dengan pesan
+> *"Permission was denied for this request to access the `loopback` address
+> space"*, dan header CORS yang benar sekalipun tidak menolong. Ini sudah
+> diuji, bukan dugaan. Halaman dan backend harus satu origin, atau backend
+> harus punya alamat publik sendiri (lihat bagian berikutnya).
 
 ### Permanen, 24 jam
 
@@ -198,6 +208,7 @@ npm run test:api       # kontrak API terhadap PHP + SQLite
 npm run test:worker    # kontrak API yang SAMA terhadap Worker + D1 lokal
 npm run test:ui        # browser, dengan backend hidup
 npm run test:ui:cuplikan   # browser, jalur cuplikan statis saja
+npm run test:ui:relatif    # browser, susunan satu origin seperti di XAMPP
 ```
 
 Tidak butuh XAMPP menyala: `test-ui.mjs` membawa server `node:http` sendiri,
@@ -289,6 +300,12 @@ test-ui.mjs                 browser; membawa server statis sendiri
   "GitHub Actions", push memakai `GITHUB_TOKEN` sengaja tidak memicu workflow
   lain -- jadi workflow cuplikan terpisah yang meng-commit tidak akan pernah
   men-deploy apa pun, dan cuplikannya duduk di git tanpa pernah terlihat.
+- **Halaman dan backend sebaiknya satu origin.** Chrome memblokir permintaan
+  dari origin publik HTTPS ke alamat loopback lewat Private Network Access,
+  jadi "GitHub Pages + `php -S` di laptop" tidak bekerja seberapa pun benar
+  header CORS-nya. Karena itu `dasar` di `data/api.json` boleh berupa alamat
+  relatif seperti `lokal/api.php`, dan `npm run test:ui:relatif` menguji
+  susunan itu secara khusus.
 - **Git LFS tidak dipakai.** GitHub Pages tidak me-resolve objek LFS; ia
   melayani berkas pointer ~130 byte, dan videonya diam tanpa error. Lagipula
   tidak ada masalah untuk dipecahkan: batas keras GitHub 100 MB per berkas,

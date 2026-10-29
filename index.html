@@ -553,7 +553,38 @@ function tentukanDasar(dariBerkas) {
   return bawaan ? String(bawaan).replace(/\/+$/, '') : null;
 }
 
+/**
+ * `dasar` boleh RELATIF, misalnya "lokal/api.php".
+ *
+ * Itu bentuk yang dipakai kalau halaman dan backend dilayani satu origin
+ * (XAMPP, atau quick tunnel yang mengarah ke XAMPP) -- dan itulah satu-satunya
+ * susunan yang bekerja tanpa akun Cloudflare.
+ *
+ * Alasannya bukan selera: Chrome memblokir permintaan dari origin publik
+ * HTTPS ke alamat loopback lewat Private Network Access, dengan pesan
+ * "Permission was denied for this request to access the loopback address
+ * space". Jadi halaman di GitHub Pages TIDAK bisa bicara ke backend di
+ * http://127.0.0.1, seberapa pun benar header CORS-nya. Satu origin
+ * menghindari CORS dan PNA sekaligus.
+ */
+function dasarRelatif(dasar) {
+  return !/^https?:\/\//i.test(String(dasar || ''));
+}
+
+/** Nama host untuk ditampilkan di footer, aman untuk dasar relatif. */
+function labelApi(dasar) {
+  if (dasarRelatif(dasar)) return 'halaman ini';
+  try {
+    return new URL(dasar).host;
+  } catch (e) {
+    return dasar;
+  }
+}
+
 function apiBolehDipakai(alamat) {
+  /* Override lewat ?api= WAJIB absolut dan ter-allowlist. Alamat relatif dari
+     parameter URL tidak diterima: ia tidak menambah kemampuan apa pun, dan
+     hanya memperluas permukaan yang harus dipikirkan. */
   let u;
   try {
     u = new URL(alamat);
@@ -1012,7 +1043,7 @@ async function muat() {
   }
 
   el('catatan-api').innerHTML = dasarApi
-    ? 'Suara disimpan di <code>' + esc(new URL(dasarApi).host) + '</code>' +
+    ? 'Suara disimpan di <code>' + esc(labelApi(dasarApi)) + '</code>' +
       (apiDariOverride ? ' (dari parameter <code>?api=</code>)' : '')
     : 'Belum tersambung ke server suara. Halaman hanya menampilkan cuplikan.';
 
