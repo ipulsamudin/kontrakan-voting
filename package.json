@@ -1,0 +1,26 @@
+{
+  "name": "kontrakan-voting",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Voting dua video kontrakan. Halaman statis, backend SQLite yang bisa ditukar.",
+  "scripts": {
+    "dev:php": "php -S 127.0.0.1:8787 lokal/api.php",
+    "dev:worker": "wrangler dev --local --port 8787 --config worker/wrangler.toml",
+    "migrasi": "wrangler d1 migrations apply kontrakan-voting --local --config worker/wrangler.toml",
+    "migrasi:remote": "wrangler d1 migrations apply kontrakan-voting --remote --config worker/wrangler.toml",
+    "deploy": "wrangler deploy --config worker/wrangler.toml",
+    "cadangan": "wrangler d1 export kontrakan-voting --remote --output cadangan/suara.sql --config worker/wrangler.toml",
+    "bagikan": "cloudflared tunnel --url http://127.0.0.1:8787",
+    "potong-matrix": "node alat/potong-matrix.mjs",
+    "test": "node test-api.mjs && node test-api.mjs --worker && node test-ui.mjs && node test-ui.mjs --tanpa-api",
+    "test:api": "node test-api.mjs",
+    "test:ui": "node test-ui.mjs",
+    "test:worker": "node test-api.mjs --worker",
+    "test:ui:cuplikan": "node test-ui.mjs --tanpa-api",
+    "cuplikan": "python alat/cuplikan.py"
+  },
+  "devDependencies": {
+    "playwright-core": "^1.48.0"
+  }
+}

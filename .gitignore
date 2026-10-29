@@ -1,0 +1,20 @@
+node_modules/
+
+# state lokal wrangler, termasuk file SQLite D1 lokal yang memuat suara uji
+.wrangler/
+.dev.vars
+
+# Salt untuk hash IP. SATU-SATUNYA rahasia yang menanggung beban di sistem
+# ini: tanpa salt, nilai `sidik` 16-hex yang diterbitkan ke publik lewat
+# /api/riwayat bisa dibalik dengan mudah, karena ruang IPv4 cuma 2^32.
+.ip-salt
+
+# basis data lokal adapter PHP
+*.sqlite
+*.sqlite-journal
+*.sqlite-wal
+*.sqlite-shm
+
+screenshot/
+_site/
+cadangan/

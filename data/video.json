@@ -1,0 +1,38 @@
+{
+  "catatan": "Harga, jarak, dan waktu tempuh TIDAK ditulis di file ini. Angka itu diturunkan dari data/matrix.json lewat matrix_index, supaya tidak ada dua sumber angka yang bisa berbeda. test-ui.mjs menurunkannya ulang dengan parser sendiri lalu membandingkannya dengan yang tampil di halaman.",
+  "diperbarui": "2026-10-29",
+  "sumber_angka": "data/matrix.json (Google Distance Matrix, diambil 2026-10-28)",
+  "rumah_index": 0,
+  "video": [
+    {
+      "id": "A",
+      "matrix_index": 1,
+      "judul": "Sukamaju, Cilodong",
+      "berkas": "video/a-sukamaju-cilodong.mp4",
+      "lebar": 480,
+      "tinggi": 848,
+      "detik": 27.17,
+      "bita": 1906148,
+      "sumber_jenis": "Facebook",
+      "sumber_url": "https://web.facebook.com/groups/infokontrakandepok/permalink/3092601260946147/",
+      "status_ambil": "berhasil",
+      "diambil": "2026-10-29",
+      "deskripsi": "Hunian Petakan khusus Pasutri\nLokasi\nJl Tole Iskandar\nSidamukti RT 08 RW 07\nSukamaju - Cilodong\nDepok\nListrik 900 Watt\n-+ 5 menit ke jl Tole Iskandar\nTerdapat parkiran motor\nTerdapat pintu belakang\nTeras berpagar\nKesekolah ,RS , Hypermart 5 menit\nHarga 850 ribu net include ( air & sampah )\nCp hub : [nomor ada di postingan aslinya] / [nomor ada di postingan aslinya]"
+    },
+    {
+      "id": "B",
+      "matrix_index": 2,
+      "judul": "GOR Candik Ayu, Jatijajar",
+      "berkas": "video/b-jatijajar.mp4",
+      "lebar": 480,
+      "tinggi": 864,
+      "detik": 35.88,
+      "bita": 7918872,
+      "sumber_jenis": "TikTok",
+      "sumber_url": "https://www.tiktok.com/@infokontrakandepok/video/7695235893396901127",
+      "status_ambil": "berhasil",
+      "diambil": "2026-10-29",
+      "deskripsi": "🏠KONTRAKAN PETAKAN MURAH 800 RIBU PER BULAN DI DEPOK🏠(Tapos, Depok)📍Jl Jatijajar Gg. Candikayu Kel. Jatijajar Kec. Tapos, Depok, Jawa Barat(Samping Gor Bulutangkis)🔽🔽🔽🔽🔽🔽🔽🔽🔽📌Spesifikasi:🛋️Ruang Tamu🛏️Kamar Tidur👩🏻‍🍳Dapur🧺Tempat Jemur 📌Fasilitas:-Air Jetpump-Listrik Token📌Lokasi Dekat: Mushola, Mesjid, Warung Madura, Toko Sayur, dllCATATAN:💰Harga: 800/bln📞Dilla: [nomor ada di postingan aslinya]🔻🔻🔻🔻🔻🔻🔻🔻🔻🔻Kami menyediakan jasa promosi kontrakan/rumah/kostan dengan harga murah tanpa menaikan harga sewa dari pemilik properti. Silakan hubungi kami untuk info lengkap 🤗\n#infokontrakandepok\n#kontrakandepok\n#kontrakanmurahdepok\n#kontrakantapos\n#taposdepok"
+    }
+  ]
+}

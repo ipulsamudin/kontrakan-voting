@@ -1,0 +1,38 @@
+name = "kontrakan-voting"
+main = "src/index.js"
+compatibility_date = "2026-10-01"
+
+# Pembatasan ukuran bundle tidak relevan: Worker ini satu berkas tanpa
+# dependency dan tanpa langkah build.
+
+[[d1_databases]]
+binding = "DB"
+database_name = "kontrakan-voting"
+
+# Diisi oleh `npx wrangler d1 create kontrakan-voting`. Nilai ini TIDAK rahasia
+# -- ia cuma UUID yang tidak berguna tanpa autentikasi akun -- jadi ia memang
+# di-commit, supaya konfigurasinya bisa direproduksi.
+database_id = "ISI-DARI-wrangler-d1-create"
+
+# Skema yang SAMA dengan yang dipakai lokal/api.php. Satu berkas migrasi,
+# dua backend, nol duplikasi -- ini yang membuat D1 (yang memang SQLite)
+# terbayar langsung, bukan nanti.
+migrations_dir = "../db/migrations"
+
+[vars]
+# Bentuknya sengaja sama dengan env ASAL_DIIZINKAN di lokal/api.php.
+# `http://localhost` TANPA port wajib ada: itu yang dikirim XAMPP di port 80.
+ASAL_DIIZINKAN = "https://ipulsamudin.github.io,http://localhost,http://localhost:80,http://localhost:8080,http://localhost:8787,http://127.0.0.1:8080,http://127.0.0.1:8787"
+
+# Saklar penutup voting. Diubah ke "1" lalu `wrangler deploy` untuk membekukan
+# hasil: POST membalas 423, GET tetap melayani. Untuk keputusan yang selesai
+# dalam hitungan hari, ini jawaban paling lengkap atas penyalahgunaan.
+VOTING_TUTUP = "0"
+
+# "1" = token yang tidak cocok DITOLAK, bukan sekadar ditandai asing.
+# Default mati, karena kunci keras membuat orang yang asli terkunci tanpa
+# jalan pemulihan. Lihat README bagian penyalahgunaan.
+KETAT = "0"
+
+# Satu-satunya rahasia: `wrangler secret put IP_SALT`.
+# JANGAN ditulis di berkas ini.

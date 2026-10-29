@@ -1,0 +1,94 @@
+name: Terbitkan
+
+# SATU workflow, SATU job: segarkan cuplikan lalu deploy. Ini bukan soal rapi.
+#
+# Dengan sumber Pages = "GitHub Actions", push yang memakai GITHUB_TOKEN
+# SENGAJA tidak memicu workflow lain. Jadi kalau penyegaran cuplikan ada di
+# workflow terpisah yang meng-commit, commit itu tidak akan pernah men-deploy
+# apa pun: cuplikannya duduk di git, tidak terlihat di situs, selamanya.
+# Karena langkah deploy di sini berjalan tepat setelah langkah penyegaran di
+# run yang sama, aturan GITHUB_TOKEN jadi tidak relevan dan risiko loop nol
+# secara struktural.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+  # Cron sengaja dimatikan.
+  #
+  # Jalur utama hasil adalah API langsung; cuplikan hanya penting saat backend
+  # tidak terjangkau. Untuk polling yang selesai dalam hitungan hari, cron
+  # membayar dengan: workflow yang auto-disable setelah 60 hari repo tidak
+  # aktif, riwayat commit yang bising, satu build Pages per run, dan mode gagal
+  # di mana fetch buruk menimpa cuplikan yang baik.
+  # Aktifkan kalau votingnya berjalan berminggu-minggu.
+  # schedule:
+  #   - cron: '17 1,13 * * *'   # 08:17 dan 20:17 WIB
+
+# Harus eksplisit: repo baru memberi GITHUB_TOKEN akses baca saja.
+# contents:write untuk commit cuplikan, pages+id-token untuk deploy-pages (OIDC).
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  terbit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Segarkan cuplikan hasil
+        run: |
+          API=$(python3 -c "import json;print(json.load(open('data/api.json')).get('dasar') or '')")
+          if [ -z "$API" ]; then
+            echo "::notice::data/api.json belum punya alamat backend; cuplikan dibiarkan apa adanya."
+            exit 0
+          fi
+          echo "Mengambil $API/api/hasil"
+          if curl -fsS --max-time 20 --retry 3 --retry-delay 5 "$API/api/hasil" -o /tmp/hasil.json; then
+            # cuplikan.py menolak respons yang bentuknya bukan hasil voting dan
+            # tidak menulis apa pun kalau isinya tidak berubah, jadi `dibuat`
+            # yang selalu baru tidak menghasilkan commit kosong tiap run.
+            python3 alat/cuplikan.py /tmp/hasil.json data/hasil.json
+          else
+            echo "::warning::Backend tidak terjangkau; cuplikan lama dipertahankan."
+          fi
+
+      - name: Commit kalau isinya benar-benar berubah
+        run: |
+          git config user.name  'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add data/hasil.json
+          # [skip ci] cuma sabuk pengaman kedua: loop sudah mustahil karena
+          # deploy dan commit ada di job yang sama.
+          git diff --cached --quiet || git commit -m 'data: segarkan cuplikan hasil [skip ci]'
+          git push
+
+      - name: Susun _site
+        run: |
+          # Daftar salin EKSPLISIT, bukan `path: .`.
+          # upload-pages-artifact dengan path titik akan ikut mem-paket .git dan
+          # node_modules. Daftar ini juga menjamin worker/, lokal/, alat/, dan
+          # berkas tes tidak pernah ikut terkirim ke situs publik.
+          mkdir -p _site
+          cp index.html _site/
+          cp -r data _site/
+          cp -r video _site/
+          touch _site/.nojekyll
+          echo "Isi _site:" && find _site -type f | sort
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+      - id: deploy
+        uses: actions/deploy-pages@v4
+
+      - name: Alamat situs
+        run: echo "Situs hidup di ${{ steps.deploy.outputs.page_url }}"

@@ -1,0 +1,1025 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- Halaman ini memuat nama orang dan pendapat mereka. Jangan sampai terindeks
+     mesin pencari: lihat catatan di atas tombol kirim. -->
+<meta name="robots" content="noindex, nofollow">
+<!-- Favicon inline sebagai data URI. Tanpa ini browser meminta
+     /favicon.ico, dapat 404, dan 404 itu tercatat sebagai error console. -->
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' rx='3' fill='%231f6feb'/%3E%3Cpath d='M4 8.5l2.5 2.5L12 5.5' stroke='white' stroke-width='2' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+<title>Pilih Kontrakan</title>
+<style>
+/* Token diambil verbatim dari index.html project induk, termasuk yang tidak
+   terpakai di halaman ini (--wa, --warn), supaya kedua stylesheet tetap bisa
+   di-diff kalau salah satunya berubah. */
+:root {
+  --bg: #f6f7f9;
+  --surface: #ffffff;
+  --surface-2: #f0f2f5;
+  --border: #dfe3e8;
+  --text: #1a1d21;
+  --text-dim: #646b75;
+  --accent: #1f6feb;
+  --accent-text: #ffffff;
+  --wa: #1d9e5e;
+  --ok: #1a7f4b;
+  --ok-bg: #e4f4ea;
+  --warn: #9a6400;
+  --warn-bg: #fdf3dc;
+  --bad: #b4232a;
+  --radius: 12px;
+  --shadow: 0 1px 2px rgba(16,20,26,.06), 0 4px 12px rgba(16,20,26,.05);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #14161a;
+    --surface: #1c1f24;
+    --surface-2: #23272e;
+    --border: #31363e;
+    --text: #e7eaee;
+    --text-dim: #9aa2ad;
+    --accent: #4d8ef7;
+    --accent-text: #0d1014;
+    --wa: #27b26c;
+    --ok: #46c483;
+    --ok-bg: #11301f;
+    --warn: #d9a528;
+    --warn-bg: #332709;
+    --bad: #ef6f75;
+    --shadow: 0 1px 2px rgba(0,0,0,.4), 0 4px 14px rgba(0,0,0,.3);
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #14161a;
+  --surface: #1c1f24;
+  --surface-2: #23272e;
+  --border: #31363e;
+  --text: #e7eaee;
+  --text-dim: #9aa2ad;
+  --accent: #4d8ef7;
+  --accent-text: #0d1014;
+  --wa: #27b26c;
+  --ok: #46c483;
+  --ok-bg: #11301f;
+  --warn: #d9a528;
+  --warn-bg: #332709;
+  --bad: #ef6f75;
+  --shadow: 0 1px 2px rgba(0,0,0,.4), 0 4px 14px rgba(0,0,0,.3);
+}
+
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font: 15px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  -webkit-text-size-adjust: 100%;
+}
+.wrap { max-width: 1080px; margin: 0 auto; padding: 20px 16px 64px; }
+
+.head { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+h1 { font-size: 22px; margin: 0 0 2px; letter-spacing: -.01em; }
+.sub { color: var(--text-dim); font-size: 13px; margin: 0 0 18px; }
+.sub code { background: var(--surface-2); padding: 1px 5px; border-radius: 4px; font-size: 12px; }
+#btn-theme { margin-left: auto; font-size: 12px; padding: 5px 10px; }
+
+/* ---------- banner ---------- */
+.banner {
+  display: none;
+  padding: 11px 13px; margin-bottom: 14px;
+  border: 1px solid var(--border); border-left: 3px solid var(--warn);
+  border-radius: 8px; background: var(--surface);
+  font-size: 13px; color: var(--text-dim);
+}
+.banner.show { display: block; }
+.banner.tolak { border-left-color: var(--bad); }
+.banner strong { color: var(--text); }
+.banner code {
+  background: var(--surface-2); padding: 1px 5px; border-radius: 4px;
+  font-size: 12px; color: var(--text); overflow-wrap: anywhere;
+}
+
+/* ---------- ringkasan ---------- */
+.summary {
+  display: flex; flex-wrap: wrap; gap: 8px 18px;
+  font-size: 13px; color: var(--text-dim); margin-bottom: 14px; padding: 0 2px;
+  align-items: center;
+}
+.summary b { color: var(--text); font-variant-numeric: tabular-nums; }
+
+/* ---------- kartu ---------- */
+.card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden;
+}
+.card-main { padding: 14px; display: grid; gap: 11px; }
+.card-top { display: flex; align-items: flex-start; gap: 12px; flex-wrap: wrap; }
+.price { font-size: 21px; font-weight: 700; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+.price small { font-size: 12px; font-weight: 500; color: var(--text-dim); }
+.badges { display: flex; gap: 6px; flex-wrap: wrap; margin-left: auto; }
+.badge {
+  font-size: 11px; font-weight: 600; padding: 3px 9px; border-radius: 999px;
+  border: 1px solid var(--border); background: var(--surface-2); color: var(--text-dim);
+  white-space: nowrap;
+}
+.badge.unggul { color: var(--ok); background: var(--ok-bg); border-color: color-mix(in srgb, var(--ok) 35%, var(--border)); }
+.badge.langsung { color: var(--ok); border-color: color-mix(in srgb, var(--ok) 35%, var(--border)); }
+.badge.cadangan { color: var(--warn); background: var(--warn-bg); border-color: color-mix(in srgb, var(--warn) 35%, var(--border)); }
+.badge.mati { color: var(--bad); border-color: color-mix(in srgb, var(--bad) 40%, var(--border)); }
+
+h2 { font-size: 16px; margin: 0; letter-spacing: -.01em; }
+
+/* ---------- klip video ---------- */
+.klips { display: grid; gap: 12px; grid-template-columns: 1fr; margin-bottom: 14px; }
+@media (min-width: 680px) { .klips { grid-template-columns: 1fr 1fr; } }
+
+.klip {
+  display: block; width: 100%; height: auto;
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--border);
+  /* Kedua klip portrait 480x848 dan 480x864. Dibiarkan apa adanya, tingginya
+     jadi sekitar 850px di kolom selebar itu -- lebih tinggi dari layar
+     kebanyakan orang, sehingga tombol memilih baru terlihat setelah scroll
+     jauh. Dibatasi tinggi, dengan object-fit contain supaya gambarnya tetap
+     utuh dan tidak terpotong. */
+  max-height: 58vh;
+  object-fit: contain;
+}
+/* Rasio dipasang per elemen lewat atribut width/height, BUKAN satu nilai
+   bersama: kedua video memang beda rasio (480x848 vs 480x864), dan memaksa
+   satu nilai akan memotong atau menggepengkan salah satunya. */
+
+.fakta { display: flex; gap: 6px 14px; flex-wrap: wrap; font-size: 13px; color: var(--text-dim); margin: 0; }
+.fakta b { color: var(--text); font-variant-numeric: tabular-nums; font-weight: 600; }
+
+.deskripsi {
+  font-size: 13px; margin: 0; color: var(--text);
+  white-space: pre-wrap; overflow-wrap: anywhere;
+  padding: 10px 11px; border-radius: 8px;
+  background: var(--surface-2); border: 1px solid var(--border);
+}
+.deskripsi.kosong { color: var(--text-dim); font-style: italic; white-space: normal; }
+
+.actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 13px; font-weight: 600; text-decoration: none;
+  padding: 8px 13px; border-radius: 8px;
+  border: 1px solid var(--border); background: var(--surface-2); color: var(--text);
+}
+.btn:hover { border-color: var(--text-dim); }
+
+/* ---------- bilah hasil ---------- */
+.bilah { display: grid; gap: 4px; }
+.bilah-jalur {
+  height: 8px; border-radius: 999px; background: var(--surface-2);
+  border: 1px solid var(--border); overflow: hidden;
+}
+.bilah-isi { height: 100%; background: var(--accent); width: 0; }
+.bilah-teks { font-size: 12px; color: var(--text-dim); font-variant-numeric: tabular-nums; }
+.bilah-teks b { color: var(--text); }
+
+/* ---------- kartu suara ---------- */
+#kartu-suara { margin-bottom: 14px; }
+.catatan-publik {
+  font-size: 12px; color: var(--text-dim);
+  padding: 10px 11px; border-radius: 8px;
+  background: var(--warn-bg); border: 1px solid color-mix(in srgb, var(--warn) 30%, var(--border));
+}
+:root[data-theme="dark"] .catatan-publik,
+.catatan-publik { color: var(--text-dim); }
+.catatan-publik strong { color: var(--text); }
+
+.field { display: grid; gap: 5px; min-width: 0; }
+.field > label {
+  font-size: 11px; font-weight: 600; text-transform: uppercase;
+  letter-spacing: .05em; color: var(--text-dim);
+}
+input, textarea {
+  font: inherit; color: var(--text); background: var(--surface-2);
+  border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; width: 100%;
+}
+textarea { resize: vertical; min-height: 62px; }
+input:focus-visible, textarea:focus-visible,
+button:focus-visible, a:focus-visible, .chip:focus-visible {
+  outline: 2px solid var(--accent); outline-offset: 2px;
+}
+.sisa { font-size: 11px; color: var(--text-dim); font-variant-numeric: tabular-nums; text-align: right; }
+
+button {
+  font: inherit; cursor: pointer; border-radius: 8px;
+  border: 1px solid var(--border); background: var(--surface-2); color: var(--text);
+  padding: 8px 14px;
+}
+button:hover:not(:disabled) { border-color: var(--text-dim); }
+button:disabled { opacity: .55; cursor: not-allowed; }
+button.primary { background: var(--accent); color: var(--accent-text); border-color: transparent; font-weight: 600; }
+
+/* Kartu suara memakai chip ber-aria-pressed, idiom seleksi yang sudah ada di
+   project induk, bukan radio: sudah bergaya di kedua tema dan target sentuhnya
+   lebih besar di HP. */
+.chips { display: flex; gap: 8px; flex-wrap: wrap; }
+.chip {
+  font: inherit; font-size: 14px; cursor: pointer;
+  padding: 9px 16px; border-radius: 999px;
+  border: 1px solid var(--border); background: var(--surface-2); color: var(--text-dim);
+}
+.chip:hover { border-color: var(--text-dim); }
+.chip[aria-pressed="true"] {
+  background: var(--accent); color: var(--accent-text);
+  border-color: transparent; font-weight: 600;
+}
+
+/* ---------- daftar suara ---------- */
+.list { display: grid; gap: 8px; }
+.suara {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 8px; padding: 10px 12px; display: grid; gap: 5px;
+}
+.suara-kepala { display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; font-size: 13px; }
+.suara-nama { font-weight: 600; overflow-wrap: anywhere; }
+.suara-waktu { color: var(--text-dim); font-size: 12px; margin-left: auto; }
+.suara-alasan { font-size: 13px; color: var(--text); white-space: pre-wrap; overflow-wrap: anywhere; }
+
+details { margin-top: 18px; }
+summary { cursor: pointer; font-size: 13px; color: var(--text-dim); padding: 6px 0; }
+summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.riwayat { margin-top: 10px; display: grid; gap: 6px; font-size: 12px; }
+.riwayat-baris {
+  display: flex; gap: 8px 12px; flex-wrap: wrap; align-items: baseline;
+  padding: 7px 10px; border: 1px solid var(--border); border-radius: 8px;
+  background: var(--surface);
+}
+.riwayat-baris .sidik {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 11px; color: var(--text-dim);
+}
+.riwayat-baris .waktu { margin-left: auto; color: var(--text-dim); }
+
+.empty { text-align: center; color: var(--text-dim); padding: 44px 16px; font-size: 14px; }
+footer { margin-top: 26px; font-size: 12px; color: var(--text-dim); text-align: center; }
+footer code { background: var(--surface-2); padding: 1px 5px; border-radius: 4px; }
+footer a { color: var(--text-dim); }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="head">
+    <div>
+      <h1>Pilih Kontrakan</h1>
+    </div>
+    <button type="button" id="btn-theme" title="Ganti tema">Tema</button>
+  </div>
+  <p class="sub">
+    Dua kandidat, dua video. Tonton keduanya, pilih satu, lalu tulis alasanmu.
+    Angka jarak dan waktu tempuh dihitung dari rumah dengan Google Distance Matrix.
+  </p>
+
+  <!-- Dua banner, sengaja terpisah.
+       #banner-tolak memuat peringatan keamanan dan TIDAK pernah disembunyikan
+       otomatis; #banner memuat pesan operasional yang datang dan pergi.
+       Kalau keduanya memakai satu elemen, pesan operasional berikutnya akan
+       menimpa peringatan bahwa tautan ini mengarahkan halaman ke server
+       asing -- dan justru peringatan itu yang paling perlu dibaca. -->
+  <div class="banner tolak" id="banner-tolak"></div>
+  <div class="banner" id="banner"></div>
+
+  <div class="summary" id="ringkas"></div>
+
+  <div class="klips" id="klips"></div>
+
+  <section class="card" id="kartu-suara">
+    <div class="card-main">
+      <h2>Suaramu</h2>
+
+      <p class="catatan-publik">
+        <strong>Yang kamu kirim tampil publik.</strong>
+        Nama dan alasanmu bisa dibaca siapa saja, dan tersimpan permanen di
+        riwayat perubahan. Tidak bisa ditarik kembali. Pakai nama panggilan
+        kalau kamu lebih nyaman begitu.
+      </p>
+
+      <div class="field">
+        <label for="f-nama">Nama kamu</label>
+        <input type="text" id="f-nama" maxlength="60" autocomplete="name"
+               placeholder="misalnya: Ipul" spellcheck="false">
+      </div>
+
+      <div class="field">
+        <label id="l-pilihan">Pilih satu</label>
+        <div class="chips" id="chips" role="group" aria-labelledby="l-pilihan"></div>
+      </div>
+
+      <div class="field">
+        <label for="f-alasan">Alasan (boleh dikosongkan)</label>
+        <textarea id="f-alasan" maxlength="500"
+                  placeholder="Kenapa pilih yang itu?"></textarea>
+        <div class="sisa" id="sisa-alasan"></div>
+      </div>
+
+      <div class="actions">
+        <button type="button" class="primary" id="btn-kirim" data-act="kirim">Kirim suara</button>
+        <button type="button" id="btn-muat" data-act="muat">Muat ulang hasil</button>
+      </div>
+    </div>
+  </section>
+
+  <h2 id="judul-hasil">Hasil</h2>
+  <div class="list" id="hasil"></div>
+
+  <details id="blok-riwayat">
+    <summary>Riwayat perubahan</summary>
+    <p class="sub" style="margin:8px 0 0">
+      Setiap pengiriman dicatat, termasuk yang menimpa suara sebelumnya.
+      Kolom terakhir adalah sidik perangkat: hash ber-salt, bukan alamat IP.
+      Ini ada supaya suara ganda terlihat, bukan supaya tercegah.
+    </p>
+    <div class="riwayat" id="riwayat"></div>
+  </details>
+
+  <footer>
+    <span id="catatan-api"></span>
+  </footer>
+</div>
+
+<script>
+'use strict';
+
+/* ============================================================== konstanta === */
+
+const KUNCI_TEMA = 'kontrakan.voting.theme';
+const KUNCI_TOKEN = 'kontrakan.voting.token.v1';
+const KUNCI_API = 'kontrakan.voting.api.v1';
+const KUNCI_NAMA = 'kontrakan.voting.nama.v1';
+
+const BATAS_ALASAN = 500;
+
+/**
+ * Host yang boleh dipakai sebagai alamat API lewat ?api=.
+ *
+ * Penjagaan ini ada karena ?api= dari URL berarti siapa pun bisa membagikan
+ * tautan yang mengarahkan halaman ini ke server mereka dan memanen nama
+ * pemilih. Tanpa allowlist, "voting" bisa berubah jadi formulir pengumpul data
+ * milik orang lain yang terlihat persis seperti halaman ini.
+ */
+const HOST_API_SAH = [
+  /^localhost$/,
+  /^127\.0\.0\.1$/,
+  /\.trycloudflare\.com$/,
+  /\.workers\.dev$/,
+];
+
+/* ================================================================ keadaan === */
+
+let dataVideo = null;   /* data/video.json  */
+let dataMatrix = null;  /* data/matrix.json */
+let dasarApi = null;    /* alamat backend, atau null kalau belum ada */
+let apiDariOverride = false;
+let pilihanTerpilih = null;
+let hasilTerakhir = null;
+
+/* ================================================================= utilitas === */
+
+const el = (id) => document.getElementById(id);
+
+/* Setiap interpolasi ke innerHTML WAJIB lewat sini. */
+function esc(s) {
+  return String(s ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+/* Satu-satunya idiom notifikasi di halaman ini. Tidak ada modal, tidak ada
+   toast -- mengikuti project induk. */
+function showBanner(html) {
+  const b = el('banner');
+  b.innerHTML = html;
+  b.classList.add('show');
+}
+function hideBanner() {
+  el('banner').classList.remove('show');
+}
+
+/* Peringatan permanen. Tidak ada pasangan "sembunyikan": begitu halaman tahu
+   tautannya mencoba mengarahkan suara ke server asing, fakta itu tetap
+   relevan sampai halaman dimuat ulang tanpa parameter tersebut. */
+function tampilTolak(html) {
+  const b = el('banner-tolak');
+  b.innerHTML = html;
+  b.classList.add('show');
+}
+
+/* Semua akses localStorage dibungkus: di mode privat atau saat site data
+   diblokir, aksesnya bisa melempar, dan halaman harus tetap jalan. */
+function simpanLokal(kunci, nilai) {
+  try {
+    localStorage.setItem(kunci, nilai);
+  } catch (e) {
+    /* diabaikan dengan sengaja */
+  }
+}
+function bacaLokal(kunci) {
+  try {
+    return localStorage.getItem(kunci);
+  } catch (e) {
+    return null;
+  }
+}
+
+const angka = (n, desimal = 0) =>
+  Number(n).toLocaleString('id-ID', { minimumFractionDigits: desimal, maximumFractionDigits: desimal });
+
+function waktuSingkat(iso) {
+  if (!iso) return '-';
+  const d = new Date(iso);
+  if (isNaN(d)) return '-';
+  return d.toLocaleString('id-ID', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+}
+
+/* ========================================================== turunan matrix === */
+
+/**
+ * Harga sewa diambil dari angka dalam kurung di names matrix.json,
+ * misalnya "A Sukamaju, Cilodong (850)" -> 850 (ribu rupiah per bulan).
+ * Kalau tidak ada angkanya (ada kandidat yang memang "(?)" di data induk),
+ * harganya dianggap belum diketahui, bukan nol.
+ */
+function hargaDari(nama) {
+  const m = /\((\d+)\)\s*$/.exec(String(nama || ''));
+  return m ? Number(m[1]) : null;
+}
+
+/** "A Sukamaju, Cilodong (850)" -> "Sukamaju, Cilodong" */
+function judulDari(nama) {
+  return String(nama || '')
+    .replace(/^[A-Z]\s+/, '')
+    .replace(/\s*\(\S*\)\s*$/, '')
+    .trim();
+}
+
+/**
+ * Fakta satu kandidat, diturunkan dari data/matrix.json lewat matrix_index.
+ *
+ * Angka ini TIDAK disimpan di video.json supaya tidak ada dua sumber yang bisa
+ * berbeda, dan test-ui.mjs menurunkannya ulang dengan parser sendiri.
+ */
+function faktaKandidat(v) {
+  const i = v.matrix_index;
+  const rumah = dataMatrix.rumah_index ?? 0;
+  const namaMatrix = dataMatrix.names[i];
+
+  return {
+    judul: v.judul || judulDari(namaMatrix),
+    harga: hargaDari(namaMatrix),
+    meter: dataMatrix.dist[rumah][i],
+    detik: dataMatrix.dur[rumah][i],
+  };
+}
+
+/* Satu desimal, bukan bilangan bulat.
+   423,9 dan 447,4 detik SAMA-SAMA membulat ke 7 menit, sehingga kedua kandidat
+   tampak identik padahal berbeda. Perbedaan 7,1 vs 7,5 itulah informasinya. */
+const formatMenit = (detik) => angka(detik / 60, 1) + ' menit';
+const formatKm = (meter) => angka(meter / 1000, 1) + ' km';
+const formatHarga = (ribuan) => (ribuan === null ? 'Harga belum diketahui' : 'Rp ' + angka(ribuan) + 'rb');
+
+/* ==================================================================== tema === */
+
+/* Tri-state: gelap -> terang -> ikut sistem. Disalin dari project induk. */
+function terapkanTema(tema) {
+  if (tema) document.documentElement.setAttribute('data-theme', tema);
+  else document.documentElement.removeAttribute('data-theme');
+
+  const b = el('btn-theme');
+  b.textContent = tema === 'dark' ? 'Tema: gelap' : tema === 'light' ? 'Tema: terang' : 'Tema: sistem';
+}
+
+function initTema() {
+  const tersimpan = bacaLokal(KUNCI_TEMA);
+  terapkanTema(tersimpan === 'dark' || tersimpan === 'light' ? tersimpan : null);
+}
+
+function gantiTema() {
+  const sekarang = document.documentElement.getAttribute('data-theme');
+  const berikut = sekarang === 'dark' ? 'light' : sekarang === 'light' ? null : 'dark';
+
+  if (berikut) simpanLokal(KUNCI_TEMA, berikut);
+  else {
+    try {
+      localStorage.removeItem(KUNCI_TEMA);
+    } catch (e) {
+      /* diabaikan */
+    }
+  }
+  terapkanTema(berikut);
+}
+
+/* ============================================================= alamat API === */
+
+/**
+ * Urutan: ?api= (harus lolos allowlist) -> localStorage -> data/api.json.
+ * null berarti belum ada backend, dan halaman masuk mode baca-saja.
+ */
+function tentukanDasar(dariBerkas) {
+  const param = new URLSearchParams(location.search).get('api');
+
+  if (param) {
+    if (apiBolehDipakai(param)) {
+      simpanLokal(KUNCI_API, param);
+      apiDariOverride = true;
+      return param.replace(/\/+$/, '');
+    }
+    tampilTolak(
+      '<strong>Alamat API di tautan ini ditolak.</strong> ' +
+        'Hanya alamat di <code>trycloudflare.com</code>, <code>workers.dev</code>, ' +
+        'atau localhost yang diterima. Halaman memakai alamat bawaan supaya namamu ' +
+        'tidak terkirim ke server yang tidak dikenal.'
+    );
+  }
+
+  const tersimpan = bacaLokal(KUNCI_API);
+  if (tersimpan && apiBolehDipakai(tersimpan)) {
+    apiDariOverride = true;
+    return tersimpan.replace(/\/+$/, '');
+  }
+
+  const bawaan = dariBerkas && dariBerkas.dasar;
+  return bawaan ? String(bawaan).replace(/\/+$/, '') : null;
+}
+
+function apiBolehDipakai(alamat) {
+  let u;
+  try {
+    u = new URL(alamat);
+  } catch (e) {
+    return false;
+  }
+  if (u.protocol !== 'https:' && u.protocol !== 'http:') return false;
+  /* http hanya boleh untuk localhost; selain itu wajib https, karena halaman
+     ini dilayani lewat https di GitHub Pages dan mixed content akan diblokir. */
+  const lokal = u.hostname === 'localhost' || u.hostname === '127.0.0.1';
+  if (u.protocol === 'http:' && !lokal) return false;
+  return HOST_API_SAH.some((pola) => pola.test(u.hostname));
+}
+
+/* ================================================================== render === */
+
+function renderKlip() {
+  el('klips').innerHTML = dataVideo.video
+    .map((v) => {
+      const f = faktaKandidat(v);
+      const ada = v.status_ambil === 'berhasil' && v.deskripsi;
+
+      const deskripsi = ada
+        ? '<p class="deskripsi">' + esc(v.deskripsi) + '</p>'
+        : '<p class="deskripsi kosong">Penjelasan lengkapnya ada di postingan ' +
+          esc(v.sumber_jenis) +
+          '. Buka tautan di bawah.</p>';
+
+      /* #t=0.8 membuat browser melompat ke detik 0,8 dan melukis frame itu
+         sebagai gambar awal. Nol aset tambahan, tanpa perlu berkas poster.
+         playsinline wajib: tanpanya iOS memaksa fullscreen saat diputar,
+         yang justru merusak tujuan halaman pembanding berdampingan. */
+      return (
+        '<article class="card" data-kandidat="' + esc(v.id) + '">' +
+        '<video class="klip" data-act="putar" data-pilihan="' + esc(v.id) + '"' +
+        ' src="' + esc(v.berkas) + '#t=0.8"' +
+        ' width="' + esc(v.lebar) + '" height="' + esc(v.tinggi) + '"' +
+        ' controls preload="metadata" playsinline webkit-playsinline>' +
+        '<a href="' + esc(v.berkas) + '" download>Unduh videonya</a>' +
+        '</video>' +
+        '<div class="card-main">' +
+        '<div class="card-top">' +
+        '<div>' +
+        '<h2>' + esc(v.id) + '. ' + esc(f.judul) + '</h2>' +
+        '<div class="price">' + esc(formatHarga(f.harga)) + '<small> / bulan</small></div>' +
+        '</div>' +
+        '<div class="badges"><span class="badge" data-badge="' + esc(v.id) + '"></span></div>' +
+        '</div>' +
+        '<p class="fakta">' +
+        '<span>Jarak dari rumah <b>' + esc(formatKm(f.meter)) + '</b></span>' +
+        '<span>Waktu tempuh <b>' + esc(formatMenit(f.detik)) + '</b></span>' +
+        '<span>Durasi video <b>' + esc(angka(v.detik, 0)) + ' detik</b></span>' +
+        '</p>' +
+        deskripsi +
+        '<div class="actions">' +
+        '<a class="btn" href="' + esc(v.sumber_url) + '" target="_blank" rel="noopener noreferrer">' +
+        'Penjelasan di ' + esc(v.sumber_jenis) +
+        '</a>' +
+        '</div>' +
+        '<div class="bilah" data-bilah="' + esc(v.id) + '">' +
+        '<div class="bilah-jalur"><div class="bilah-isi"></div></div>' +
+        '<div class="bilah-teks"></div>' +
+        '</div>' +
+        '</div>' +
+        '</article>'
+      );
+    })
+    .join('');
+}
+
+function renderChips() {
+  el('chips').innerHTML = dataVideo.video
+    .map((v) => {
+      const f = faktaKandidat(v);
+      return (
+        '<button type="button" class="chip" data-act="pilih" data-pilihan="' + esc(v.id) + '"' +
+        ' aria-pressed="' + (pilihanTerpilih === v.id ? 'true' : 'false') + '">' +
+        esc(v.id) + '. ' + esc(f.judul) +
+        '</button>'
+      );
+    })
+    .join('');
+}
+
+function renderRingkas(d) {
+  const label =
+    d.sumber === 'langsung'
+      ? '<span class="badge langsung">Hasil langsung</span>'
+      : '<span class="badge cadangan">Cuplikan' + (d.dibuat ? ' - ' + esc(waktuSingkat(d.dibuat)) : '') + '</span>';
+
+  const tutup = d.tutup ? '<span class="badge mati">Voting ditutup</span>' : '';
+
+  el('ringkas').innerHTML =
+    label +
+    tutup +
+    '<span>Total suara <b>' + esc(angka(d.total)) + '</b></span>' +
+    '<span>A <b>' + esc(angka(d.hitung.A)) + '</b></span>' +
+    '<span>B <b>' + esc(angka(d.hitung.B)) + '</b></span>';
+}
+
+function renderBilah(d) {
+  for (const v of dataVideo.video) {
+    const n = d.hitung[v.id] || 0;
+    const persen = d.total > 0 ? (n / d.total) * 100 : 0;
+
+    const blok = document.querySelector('[data-bilah="' + v.id + '"]');
+    if (!blok) continue;
+
+    blok.querySelector('.bilah-isi').style.width = persen.toFixed(1) + '%';
+    blok.querySelector('.bilah-teks').innerHTML =
+      '<b>' + esc(angka(n)) + '</b> suara' + (d.total > 0 ? ' - ' + esc(angka(persen, 0)) + '%' : '');
+
+    /* role img + aria-label supaya bilah ini terbaca pembaca layar, karena
+       lebarnya saja tidak menyampaikan apa pun. */
+    const jalur = blok.querySelector('.bilah-jalur');
+    jalur.setAttribute('role', 'img');
+    jalur.setAttribute('aria-label', v.id + ': ' + n + ' suara dari ' + d.total);
+
+    const badge = document.querySelector('[data-badge="' + v.id + '"]');
+    if (badge) {
+      const unggul = d.total > 0 && n > d.total / 2;
+      badge.className = 'badge' + (unggul ? ' unggul' : '');
+      badge.textContent = unggul ? 'Terbanyak' : d.total > 0 ? angka(persen, 0) + '%' : 'Belum ada suara';
+    }
+  }
+}
+
+function renderDaftarSuara(d) {
+  const kotak = el('hasil');
+
+  if (!d.suara || d.suara.length === 0) {
+    kotak.innerHTML = '<p class="empty">Belum ada yang memberi suara. Jadilah yang pertama.</p>';
+    return;
+  }
+
+  const judulKandidat = {};
+  for (const v of dataVideo.video) judulKandidat[v.id] = faktaKandidat(v).judul;
+
+  kotak.innerHTML = d.suara
+    .map((s) => {
+      const tandaAsing = s.asing
+        ? ' <span class="badge" title="Pengiriman terakhir datang dari perangkat yang berbeda dari pengirim pertama nama ini">diubah dari perangkat lain</span>'
+        : '';
+      const tandaRevisi = s.revisi > 0 ? ' <span class="badge">diubah ' + esc(angka(s.revisi)) + 'x</span>' : '';
+
+      const alasan = s.alasan ? '<div class="suara-alasan">' + esc(s.alasan) + '</div>' : '';
+
+      return (
+        '<div class="suara">' +
+        '<div class="suara-kepala">' +
+        '<span class="suara-nama">' + esc(s.nama) + '</span>' +
+        '<span class="badge">' + esc(s.pilihan) + '. ' + esc(judulKandidat[s.pilihan] || '') + '</span>' +
+        tandaRevisi +
+        tandaAsing +
+        '<span class="suara-waktu">' + esc(waktuSingkat(s.diubah)) + '</span>' +
+        '</div>' +
+        alasan +
+        '</div>'
+      );
+    })
+    .join('');
+}
+
+function renderHasil(d) {
+  hasilTerakhir = d;
+  renderRingkas(d);
+  renderBilah(d);
+  renderDaftarSuara(d);
+}
+
+function renderRiwayat(baris) {
+  const kotak = el('riwayat');
+  if (!baris || baris.length === 0) {
+    kotak.innerHTML = '<p class="empty">Belum ada riwayat.</p>';
+    return;
+  }
+  kotak.innerHTML = baris
+    .map(
+      (r) =>
+        '<div class="riwayat-baris">' +
+        '<span><b>' + esc(r.nama) + '</b></span>' +
+        '<span class="badge">' + esc(r.aksi) + '</span>' +
+        '<span>' + esc(r.pilihan || '-') + '</span>' +
+        (r.asing ? '<span class="badge">perangkat lain</span>' : '') +
+        '<span class="sidik">' + esc(r.sidik || '-') + '</span>' +
+        '<span class="waktu">' + esc(waktuSingkat(r.waktu)) + '</span>' +
+        '</div>'
+    )
+    .join('');
+}
+
+/* =============================================================== jaringan === */
+
+async function ambilJson(alamat, opsi = {}) {
+  const { batasMs = 4000 } = opsi;
+  const pembatal = new AbortController();
+  const jam = setTimeout(() => pembatal.abort(), batasMs);
+  try {
+    const res = await fetch(alamat, { ...opsi, signal: pembatal.signal });
+    const teks = await res.text();
+    let json = null;
+    try {
+      json = teks ? JSON.parse(teks) : null;
+    } catch (e) {
+      /* dibiarkan null, pemanggil yang memutuskan */
+    }
+    return { ok: res.ok, status: res.status, json };
+  } finally {
+    clearTimeout(jam);
+  }
+}
+
+/** Menyetel bisa/tidaknya mengirim suara, beserta alasannya di tombol. */
+function setBisaKirim(bisa, alasan) {
+  const b = el('btn-kirim');
+  b.disabled = !bisa;
+  b.title = bisa ? '' : alasan || '';
+}
+
+async function muatHasil() {
+  /* Jalur utama: backend hidup. */
+  if (dasarApi) {
+    try {
+      /* Cache-bust wajib, bukan kehati-hatian berlebihan: tanpa ini, urutan
+         "kirim suara lalu muat hasil" bisa dilayani dari cache browser dan
+         pemilih melihat angkanya tidak berubah. */
+      const r = await ambilJson(dasarApi + '/api/hasil?_=' + Date.now());
+      if (r.ok && r.json && r.json.ok) {
+        hideBanner();
+        renderHasil(r.json);
+        setBisaKirim(!r.json.tutup, 'Voting sudah ditutup.');
+        if (r.json.tutup) {
+          showBanner('<strong>Voting sudah ditutup.</strong> Hasilnya tetap bisa dilihat di bawah.');
+        }
+        muatRiwayat();
+        return;
+      }
+    } catch (e) {
+      /* jatuh ke cuplikan di bawah */
+    }
+  }
+
+  /* Jalur cadangan: cuplikan statis yang ikut ter-commit.
+     Cache-bust wajib: GitHub Pages melayani max-age=600, dan tanpa ini pemilih
+     melihat angka basi 10 menit lalu menyimpulkan suaranya hilang. */
+  try {
+    const r = await ambilJson('data/hasil.json?_=' + Date.now(), { batasMs: 6000 });
+    if (r.ok && r.json) {
+      renderHasil(r.json);
+      setBisaKirim(false, 'Server suara belum bisa dihubungi.');
+
+      if (dasarApi) {
+        showBanner(
+          '<strong>Server suara sedang tidak bisa dihubungi.</strong> ' +
+            'Angka di bawah adalah cuplikan terakhir' +
+            (r.json.dibuat ? ' (' + esc(waktuSingkat(r.json.dibuat)) + ')' : '') +
+            '. Mengirim suara belum bisa sekarang.'
+        );
+      } else {
+        showBanner(
+          '<strong>Voting belum aktif.</strong> ' +
+            'Halaman ini belum punya alamat server untuk menyimpan suara, jadi ' +
+            'baru bisa menampilkan hasil. Lihat <code>README.md</code> bagian ' +
+            '"Menghidupkan voting" untuk mengaktifkannya.'
+        );
+      }
+      return;
+    }
+  } catch (e) {
+    /* jatuh ke keadaan kosong */
+  }
+
+  el('hasil').innerHTML = '<p class="empty">Hasil tidak bisa dimuat.</p>';
+  setBisaKirim(false, 'Hasil tidak bisa dimuat.');
+  showBanner('<strong>Hasil tidak bisa dimuat.</strong> Coba muat ulang halaman ini.');
+}
+
+async function muatRiwayat() {
+  if (!dasarApi) return;
+  try {
+    const r = await ambilJson(dasarApi + '/api/riwayat?batas=200&_=' + Date.now());
+    if (r.ok && r.json && r.json.ok) renderRiwayat(r.json.riwayat);
+  } catch (e) {
+    /* riwayat itu tambahan, kegagalannya tidak perlu mengganggu */
+  }
+}
+
+/* ============================================================ kirim suara === */
+
+async function kirimSuara() {
+  const tombol = el('btn-kirim');
+  const nama = el('f-nama').value;
+  const alasan = el('f-alasan').value;
+
+  /* Validasi di klien hanya untuk menghemat satu perjalanan ke server.
+     Server tetap yang berwenang, dan normalisasinya hanya ada di sana. */
+  if (!nama.trim()) {
+    showBanner('<strong>Namamu belum diisi.</strong> Isi dulu supaya suaramu bisa ditelusuri.');
+    el('f-nama').focus();
+    return;
+  }
+  if (!pilihanTerpilih) {
+    showBanner('<strong>Belum ada yang dipilih.</strong> Ketuk salah satu kandidat di bagian "Pilih satu".');
+    return;
+  }
+
+  const labelAwal = tombol.textContent;
+  tombol.disabled = true;
+  tombol.textContent = 'Mengirim...';
+
+  const badan = { nama: nama, pilihan: pilihanTerpilih, alasan: alasan };
+  const token = bacaLokal(KUNCI_TOKEN);
+  if (token) badan.token = token;
+
+  try {
+    /* text/plain itu tipe yang CORS-safelisted, jadi tidak ada preflight.
+       Satu perjalanan bolak-balik lebih sedikit, yang terasa di koneksi
+       seluler. Server tetap menerima application/json juga. */
+    const r = await ambilJson(dasarApi + '/api/suara', {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=UTF-8' },
+      body: JSON.stringify(badan),
+      batasMs: 8000,
+    });
+
+    if (r.json && r.json.ok) {
+      hideBanner();
+      if (r.json.token) simpanLokal(KUNCI_TOKEN, r.json.token);
+      simpanLokal(KUNCI_NAMA, nama.trim());
+
+      /* Respons POST sudah membawa tally terbaru, jadi tidak perlu GET
+         susulan. Daftar suaranya tetap perlu diambil ulang. */
+      renderRingkas({ ...hasilTerakhir, ...r.json, sumber: 'langsung', tutup: false });
+      renderBilah({ ...hasilTerakhir, ...r.json });
+
+      tombol.textContent = r.json.aksi === 'ubah' ? 'Pilihan diubah' : 'Tersimpan';
+      setTimeout(() => {
+        tombol.textContent = labelAwal;
+        tombol.disabled = false;
+      }, 1600);
+
+      muatHasil();
+      return;
+    }
+
+    const kode = (r.json && r.json.kode) || 'galat';
+    const pesan = (r.json && r.json.pesan) || 'Suara gagal dikirim.';
+    showBanner('<strong>' + esc(pesan) + '</strong> <code>' + esc(kode) + '</code>');
+  } catch (e) {
+    showBanner(
+      '<strong>Server suara tidak bisa dihubungi.</strong> ' +
+        'Cek koneksimu, lalu coba lagi. Suaramu belum tersimpan.'
+    );
+  }
+
+  tombol.textContent = labelAwal;
+  tombol.disabled = false;
+}
+
+/* ================================================================== event === */
+
+function onKlik(ev) {
+  const t = ev.target.closest('[data-act]');
+  if (!t) return;
+  const aksi = t.getAttribute('data-act');
+
+  if (aksi === 'pilih') {
+    pilihanTerpilih = t.getAttribute('data-pilihan');
+    for (const c of document.querySelectorAll('#chips .chip')) {
+      c.setAttribute('aria-pressed', c.getAttribute('data-pilihan') === pilihanTerpilih ? 'true' : 'false');
+    }
+    hideBanner();
+    return;
+  }
+
+  if (aksi === 'kirim') {
+    kirimSuara();
+    return;
+  }
+
+  if (aksi === 'muat') {
+    muatHasil();
+    return;
+  }
+}
+
+/* Dua video yang berbunyi bersamaan tidak ada gunanya di halaman pembanding,
+   jadi memutar salah satu menjeda yang lain. */
+function onPutar(ev) {
+  for (const v of document.querySelectorAll('video.klip')) {
+    if (v !== ev.target) v.pause();
+  }
+}
+
+function onTulisAlasan() {
+  const n = [...el('f-alasan').value].length;
+  el('sisa-alasan').textContent = n + ' / ' + BATAS_ALASAN;
+}
+
+/* ==================================================================== muat === */
+
+async function muat() {
+  initTema();
+  el('btn-theme').addEventListener('click', gantiTema);
+  document.addEventListener('click', onKlik);
+  el('f-alasan').addEventListener('input', onTulisAlasan);
+  onTulisAlasan();
+
+  /* fetch() tidak bisa membaca berkas tetangga lewat file://, jadi halaman ini
+     harus dilayani lewat http. Banner-nya disalin dari project induk. */
+  if (location.protocol === 'file:') {
+    showBanner(
+      '<strong>Halaman ini harus dibuka lewat server, bukan berkas langsung.</strong> ' +
+        'Jalankan XAMPP lalu buka <code>http://localhost/kontrakan-voting/</code>.'
+    );
+    setBisaKirim(false, 'Harus dibuka lewat http.');
+    return;
+  }
+
+  let berkasApi = null;
+  try {
+    const [v, m, a] = await Promise.all([
+      ambilJson('data/video.json?_=' + Date.now(), { batasMs: 8000 }),
+      ambilJson('data/matrix.json?_=' + Date.now(), { batasMs: 8000 }),
+      ambilJson('data/api.json?_=' + Date.now(), { batasMs: 8000 }),
+    ]);
+    dataVideo = v.json;
+    dataMatrix = m.json;
+    berkasApi = a.json;
+  } catch (e) {
+    /* ditangani di bawah */
+  }
+
+  if (!dataVideo || !dataMatrix) {
+    el('klips').innerHTML = '<p class="empty">Data video tidak bisa dimuat.</p>';
+    setBisaKirim(false, 'Data video tidak bisa dimuat.');
+    showBanner('<strong>Data video tidak bisa dimuat.</strong> Pastikan folder <code>data/</code> ikut terbawa.');
+    return;
+  }
+
+  dasarApi = tentukanDasar(berkasApi);
+
+  /* Kartu video dan kartu suara dirender SEBELUM panggilan jaringan apa pun,
+     supaya halaman sudah berguna sebelum hasil datang. */
+  renderKlip();
+  renderChips();
+
+  const namaTersimpan = bacaLokal(KUNCI_NAMA);
+  if (namaTersimpan) el('f-nama').value = namaTersimpan;
+
+  for (const v of document.querySelectorAll('video.klip')) {
+    v.addEventListener('play', onPutar);
+    v.addEventListener('error', () =>
+      showBanner('<strong>Ada video yang gagal dimuat.</strong> Coba muat ulang halaman ini.')
+    );
+  }
+
+  el('catatan-api').innerHTML = dasarApi
+    ? 'Suara disimpan di <code>' + esc(new URL(dasarApi).host) + '</code>' +
+      (apiDariOverride ? ' (dari parameter <code>?api=</code>)' : '')
+    : 'Belum tersambung ke server suara. Halaman hanya menampilkan cuplikan.';
+
+  await muatHasil();
+}
+
+muat();
+</script>
+</body>
+</html>

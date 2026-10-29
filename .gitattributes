@@ -1,0 +1,12 @@
+# core.autocrlf=true di mesin ini. Tanpa aturan di bawah, Git bisa
+# menormalkan baris di dalam mp4 dan merusaknya secara senyap. Gejalanya
+# cuma "video tidak jalan" di situs live, tanpa error apa pun.
+#
+# Verifikasi setelah commit:
+#   git cat-file -s HEAD:video/a-sukamaju-cilodong.mp4   -> 1906148
+#   git cat-file -s HEAD:video/b-jatijajar.mp4           -> 7918872
+* text=auto eol=lf
+
+*.mp4 binary
+*.jpg binary
+*.png binary

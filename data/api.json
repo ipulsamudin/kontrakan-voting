@@ -1,0 +1,9 @@
+{
+  "catatan": "Satu-satunya sumber URL API. Dibaca oleh index.html dan oleh workflow GitHub Actions, supaya halaman dan CI tidak pernah berbeda. Isi `dasar` dengan null kalau belum ada backend; halaman akan menampilkan hasil dari data/hasil.json dan menonaktifkan tombol kirim.",
+  "pilihan_dasar": {
+    "php_lokal": "http://127.0.0.1:8787",
+    "php_xampp": "http://localhost/kontrakan-voting/lokal/api.php",
+    "worker": "https://kontrakan-voting.<subdomain>.workers.dev"
+  },
+  "dasar": null
+}

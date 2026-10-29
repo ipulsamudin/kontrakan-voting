@@ -1,0 +1,43 @@
+{
+  "catatan": "Irisan 3x3 dari matrix.json project induk: RUMAH + dua kandidat yang divoting. Angka dalam kurung di names adalah sewa bulanan dalam ribuan rupiah. dist dalam meter, dur dalam detik. Matriksnya ASIMETRIS: dist[0][1] (rumah ke A) tidak sama dengan dist[1][0] (A ke rumah). names[0] diredaksi, alamat rumah tidak ikut diterbitkan.",
+  "sumber": "Google Distance Matrix, diambil 2026-10-28",
+  "names": [
+    "RUMAH",
+    "A Sukamaju, Cilodong (850)",
+    "B GOR Candik Ayu, Jatijajar (800)"
+  ],
+  "dist": [
+    [
+      0,
+      7067.2,
+      7720.9
+    ],
+    [
+      7652.5,
+      0,
+      3082.6
+    ],
+    [
+      8332.3,
+      3077.2,
+      0
+    ]
+  ],
+  "dur": [
+    [
+      0,
+      423.9,
+      447.4
+    ],
+    [
+      449.9,
+      0,
+      305.9
+    ],
+    [
+      475.1,
+      312.1,
+      0
+    ]
+  ]
+}

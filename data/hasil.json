@@ -1,0 +1,13 @@
+{
+ "catatan": "Cuplikan statis hasil voting. Placeholder sampai ada backend yang hidup. Bentuknya identik dengan respons GET /api/hasil supaya halaman memakai satu renderer untuk keduanya; bedanya hanya field `sumber`.",
+ "dibuat": null,
+ "hitung": {
+  "A": 0,
+  "B": 0
+ },
+ "ok": true,
+ "suara": [],
+ "sumber": "cadangan",
+ "total": 0,
+ "tutup": false
+}
