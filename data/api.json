@@ -5,5 +5,5 @@
     "php_xampp": "http://localhost/kontrakan-voting/lokal/api.php",
     "worker": "https://kontrakan-voting.<subdomain>.workers.dev"
   },
-  "dasar": null
+  "dasar": "https://kontrakan-voting.pages.dev"
 }

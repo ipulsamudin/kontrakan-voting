@@ -1,0 +1,39 @@
+# Konfigurasi Cloudflare Pages untuk backend voting.
+#
+# DIBUAT OTOMATIS oleh alat/deploy-cf.mjs. Jangan disunting dengan tangan --
+# jalankan ulang `npm run deploy:cf` kalau perlu berubah.
+#
+# Berkas ini ada di folder sendiri, dan namanya wajib wrangler.toml, karena
+# `wrangler pages deploy` menolak --config dengan path kustom. Menaruhnya di
+# sini mencegah root repo punya wrangler.toml kedua yang bisa tertukar dengan
+# milik Worker di worker/wrangler.toml.
+#
+# Blok [vars] DISALIN dari worker/wrangler.toml oleh skrip, bukan diketik
+# ulang: dua daftar origin CORS yang bisa menyimpang diam-diam adalah persis
+# jenis bug yang hanya muncul di produksi.
+name = "kontrakan-voting"
+pages_build_output_dir = "keluaran"
+compatibility_date = "2026-10-01"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "kontrakan-voting"
+database_id = "c1806537-6938-45dc-a648-4d8750b02682"
+
+[vars]
+# Bentuknya sengaja sama dengan env ASAL_DIIZINKAN di lokal/api.php.
+# `http://localhost` TANPA port wajib ada: itu yang dikirim XAMPP di port 80.
+ASAL_DIIZINKAN = "https://ipulsamudin.github.io,http://localhost,http://localhost:80,http://localhost:8080,http://localhost:8787,http://127.0.0.1:8080,http://127.0.0.1:8787"
+
+# Saklar penutup voting. Diubah ke "1" lalu `wrangler deploy` untuk membekukan
+# hasil: POST membalas 423, GET tetap melayani. Untuk keputusan yang selesai
+# dalam hitungan hari, ini jawaban paling lengkap atas penyalahgunaan.
+VOTING_TUTUP = "0"
+
+# "1" = token yang tidak cocok DITOLAK, bukan sekadar ditandai asing.
+# Default mati, karena kunci keras membuat orang yang asli terkunci tanpa
+# jalan pemulihan. Lihat README bagian penyalahgunaan.
+KETAT = "0"
+
+# Satu-satunya rahasia: `wrangler secret put IP_SALT`.
+# JANGAN ditulis di berkas ini.

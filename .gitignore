@@ -18,3 +18,11 @@ node_modules/
 screenshot/
 _site/
 cadangan/
+
+# keluaran build untuk Cloudflare Pages, dibuat alat/deploy-cf.mjs.
+# Konfigurasinya (pages/wrangler.toml) justru DI-COMMIT.
+pages/keluaran/
+
+# salinan lokal IP_SALT, supaya Worker dan Pages bisa memakai salt yang sama.
+# Rahasia di Cloudflare hanya bisa ditulis, tidak bisa dibaca balik.
+.cf-ip-salt
