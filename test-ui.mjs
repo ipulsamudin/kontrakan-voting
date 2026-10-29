@@ -541,20 +541,30 @@ cekBenar(
 
 {
   /* Video benar-benar bisa di-decode Chrome, bukan cuma ada di DOM.
-     readyState >= 1 berarti metadata sudah terbaca. */
-  const siap = await page.$$eval('video.klip', (daftar) =>
-    Promise.all(
-      daftar.map(
-        (v) =>
-          new Promise((selesai) => {
-            if (v.readyState >= 1) return selesai({ rs: v.readyState, w: v.videoWidth, d: v.duration });
-            v.addEventListener('loadedmetadata', () =>
-              selesai({ rs: v.readyState, w: v.videoWidth, d: v.duration })
-            );
-            setTimeout(() => selesai({ rs: v.readyState, w: v.videoWidth, d: v.duration }), 8000);
-          })
-      )
-    )
+     readyState >= 1 berarti metadata sudah terbaca.
+
+     Batas waktunya jauh lebih longgar saat menguji situs live: di sana mp4
+     7,9 MB diambil lewat jaringan sungguhan, dan batas 8 detik membuat
+     assertion ini kadang gagal padahal halamannya benar. Tes yang kadang
+     gagal itu cacat tersendiri -- ia mengikis kepercayaan pada assertion
+     lain yang justru sedang menjaga hal penting. */
+  const BATAS_METADATA = SITUS_LUAR ? 30000 : 8000;
+
+  const siap = await page.$$eval(
+    'video.klip',
+    (daftar, batas) =>
+      Promise.all(
+        daftar.map(
+          (v) =>
+            new Promise((selesai) => {
+              const lapor = () => selesai({ rs: v.readyState, w: v.videoWidth, d: v.duration });
+              if (v.readyState >= 1) return lapor();
+              v.addEventListener('loadedmetadata', lapor);
+              setTimeout(lapor, batas);
+            })
+        )
+      ),
+    BATAS_METADATA
   );
   cekBenar('metadata kedua video terbaca', siap.every((s) => s.rs >= 1), JSON.stringify(siap));
   cekBenar(
